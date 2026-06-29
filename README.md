@@ -1,55 +1,81 @@
 # Slotted
 
-**Le support de jeux qui s'adapte à ta console, pas l'inverse.**
+> **Le support de jeux qui s'adapte à ta console, pas l'inverse.**
 
-Slotted est un générateur de supports de rangement pour jeux vidéo, imprimables en 3D. Choisis ta console, le nombre de jeux à ranger, et télécharge un fichier prêt à trancher — sans cote à reprendre, sans modèle générique qui ne correspond jamais tout à fait à ton boîtier.
+Slotted est un générateur de supports de rangement pour jeux vidéo imprimables en 3D. Choisis ta console, le nombre de jeux à ranger, puis télécharge un fichier prêt à trancher — sans cote à reprendre, sans modèle générique qui ne correspond jamais tout à fait à ton boîtier.
 
-Pas de compte, pas d'installation, pas de backend. Tout tourne dans le navigateur.
+**Pas de compte. Pas d'installation. Pas de backend.** Tout tourne directement dans le navigateur.
 
 ---
 
-## Le principe
+# 📖 Le principe
 
-Un support de rangement classique pour jeux vidéo, ça se résume à peu de choses : un socle plat, des petites parois pour séparer chaque boîtier, et une paroi de fond pour les empêcher de glisser. La difficulté, c'est que chaque console a son propre format de boîtier — un jeu PS5 et un jeu Switch n'ont ni la même épaisseur, ni la même largeur. Un modèle figé pour l'un ne conviendra jamais parfaitement à l'autre.
+Un support de rangement classique pour jeux vidéo se résume à peu de choses : un socle plat, des séparateurs et une paroi de fond pour empêcher les boîtiers de glisser.
 
-Slotted règle ce problème en générant le modèle à la demande, à partir de mesures réelles :
+Le problème, c'est que chaque console possède son propre format de boîtier. Un jeu PS5 et un jeu Switch n'ont ni la même largeur, ni la même épaisseur. Un modèle figé pour l'un ne conviendra donc jamais parfaitement à l'autre.
+
+Slotted règle ce problème en générant le modèle à la demande à partir de mesures réelles.
 
 1. **Choisis ta plateforme et ta console** — PlayStation, Nintendo, Xbox ou Sega, du PS1 à la PS5, de la Game Boy à la Switch 2.
 2. **Indique le nombre de jeux** à ranger.
-3. **Télécharge le fichier .STL**, déjà dimensionné à l'épaisseur exacte de ton boîtier, prêt à être ouvert dans ton logiciel de découpe (slicer) habituel.
+3. **Télécharge le fichier `.STL`**, déjà dimensionné à l'épaisseur exacte de ton boîtier et prêt à être ouvert dans ton slicer habituel.
 
-La largeur du support, la profondeur, l'espacement entre chaque jeu : tout est recalculé automatiquement à chaque changement. Il n'y a aucune mesure à reprendre à la main.
-
-## Consoles prises en charge
-
-| Plateforme | Modèles |
-|---|---|
-| **PlayStation** | PS1 · PS2 · PS3 · PS4 · PS5 · PSP · PS Vita |
-| **Nintendo** | Switch · Switch 2 · Wii / Wii U · 3DS · DS · GameCube |
-| **Xbox** | 1ère génération · 360 · One · Series |
-| **Sega** | Saturn · Dreamcast |
-
-Chaque modèle a son épaisseur de boîtier mesurée individuellement — ce n'est pas une estimation générique appliquée à toutes les consoles.
-
-## Pensé pour être imprimé
-
-Le modèle généré est volontairement simple : un socle plat avec des parois basses, sans surplomb ni zone qui nécessiterait des supports d'impression. Les épaisseurs ont été optimisées pour rester solides tout en réduisant le temps d'impression et la quantité de matière utilisée — sur un support typique, on passe d'environ 2h30 à 1h15-1h30 par rapport à une première version plus massive.
-
-Aucun réglage de profondeur à deviner non plus : elle se calcule automatiquement à partir de la taille réelle du boîtier choisi.
-
-## Comment fonctionne l'aperçu 3D
-
-Le configurateur affiche un aperçu du modèle qui se reconstruit en direct à chaque réglage. Il n'utilise ni WebGL ni de moteur 3D externe (pas de Three.js, pas de dépendance à charger) : chaque point du modèle est projeté à la main sur une simple image 2D, recalculé image par image. C'est un choix délibéré — moins de poids, moins de risques de chargement cassé, et un aperçu qui reste fidèle à la géométrie réellement exportée.
-
-Cette approche "fait main" a une contrepartie : il peut arriver que l'aperçu affiche un effet visuel inattendu pendant la rotation (une arête qui semble se croiser un instant, une face qui clignote à un certain angle). C'est un artefact du rendu en fil de fer, pas un défaut du modèle — le fichier `.STL` téléchargé reste toujours exact, quel que soit ce qu'affiche l'aperçu à l'écran.
-
-## Utilisation
-
-Le projet est constitué de deux pages HTML autonomes, sans dépendance ni étape de build :
-
-- `index.html` — page de présentation
-- `configurateur.html` — l'outil de génération à proprement parler
+La largeur du support, sa profondeur et l'espacement entre chaque jeu sont recalculés automatiquement. Aucune mesure n'est à reprendre manuellement.
 
 ---
 
-Fait pour être imprimé — **Enzo445 × NEXA**
+# 🎮 Consoles prises en charge
+
+| Plateforme      | Modèles                                               |
+| --------------- | ----------------------------------------------------- |
+| **PlayStation** | PS1 · PS2 · PS3 · PS4 · PS5 · PSP · PS Vita           |
+| **Nintendo**    | Switch · Switch 2 · Wii · Wii U · GameCube · DS · 3DS |
+| **Xbox**        | Xbox · Xbox 360 · Xbox One · Xbox Series              |
+| **Sega**        | Saturn · Dreamcast                                    |
+
+Chaque modèle utilise les dimensions réelles de son boîtier. Aucune valeur générique n'est réutilisée d'une console à l'autre.
+
+---
+
+# 🖨️ Pensé pour être imprimé
+
+Le modèle généré est volontairement simple : un socle plat avec des séparateurs bas, sans surplomb ni zone nécessitant des supports d'impression.
+
+Les épaisseurs ont été optimisées pour conserver une bonne solidité tout en réduisant le temps d'impression et la quantité de matière utilisée. Sur un support typique, on passe d'environ **2 h 30** à **1 h 15 – 1 h 30***.
+
+La profondeur du support est également calculée automatiquement à partir des dimensions réelles du boîtier sélectionné.
+
+---
+
+# 🖥️ Comment fonctionne l'aperçu 3D
+
+Le configurateur affiche un aperçu qui se reconstruit en temps réel à chaque modification.
+
+Il n'utilise **ni WebGL**, **ni Three.js**, ni aucun moteur 3D externe. Chaque point du modèle est projeté manuellement sur une image 2D puis recalculé à chaque image.
+
+Ce choix permet de conserver un projet léger, sans dépendances, tout en affichant un aperçu fidèle au modèle réellement exporté.
+
+Il peut arriver que certaines arêtes semblent se croiser ou qu'une face clignote brièvement pendant la rotation. Il s'agit uniquement d'un artefact du rendu en fil de fer : le fichier `.STL` généré reste parfaitement correct.
+
+---
+
+# 🚀 Utilisation
+
+Le projet est constitué de deux pages HTML autonomes, sans dépendance et sans étape de build.
+
+* `index.html` — page de présentation
+* `configurateur.html` — générateur de supports
+
+---
+
+* L'estimation de **1 h 15 à 1 h 30** est basée sur le modèle **PS5 (6 emplacements)** imprimé sur une **Bambu Lab A1** avec des paramètres standards. Le temps d'impression peut varier selon la console, le nombre d'emplacements, l'imprimante et les réglages utilisés.
+
+---
+
+<div align="center">
+
+**Fait pour être imprimé.**
+
+**Enzo445 × NEXA**
+
+</div>

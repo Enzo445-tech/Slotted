@@ -119,8 +119,7 @@
 
   .seg{
     display:grid;
-    grid-auto-flow:column;
-    grid-auto-columns:1fr;
+    grid-template-columns:1fr 1fr;
     gap:1px;
     background:var(--line);
     border:1px solid var(--line);
@@ -304,23 +303,35 @@ const PLATFORMS = {
       ps3:  { label: "PS3",  caseThickness: 14,   caseDepth: 135 },
       ps4:  { label: "PS4",  caseThickness: 16.3, caseDepth: 135 },
       ps5:  { label: "PS5",  caseThickness: 17,   caseDepth: 135 },
+      psp:  { label: "PSP",  caseThickness: 14,   caseDepth: 104 },
+      vita: { label: "PS Vita", caseThickness: 11, caseDepth: 105 },
     }
   },
   nintendo: {
     label: "Nintendo",
     consoles: {
-      switch:  { label: "Switch",   caseThickness: 9.5, caseDepth: 105 },
-      switch2: { label: "Switch 2", caseThickness: 9.5, caseDepth: 130 },
-      wii:     { label: "Wii",      caseThickness: 13,  caseDepth: 135 },
-      n3ds:    { label: "3DS",      caseThickness: 8,   caseDepth: 122 },
+      switch:  { label: "Switch",    caseThickness: 9.5, caseDepth: 105 },
+      switch2: { label: "Switch 2",  caseThickness: 9.5, caseDepth: 130 },
+      wii:     { label: "Wii/Wii U", caseThickness: 13,  caseDepth: 135 },
+      n3ds:    { label: "3DS",       caseThickness: 8,   caseDepth: 122 },
+      ds:      { label: "DS",        caseThickness: 19,  caseDepth: 123 },
+      gamecube:{ label: "GameCube",  caseThickness: 14,  caseDepth: 135 },
     }
   },
   xbox: {
     label: "Xbox",
     consoles: {
-      x360:   { label: "360",    caseThickness: 14,   caseDepth: 135 },
-      xone:   { label: "One",    caseThickness: 14.5, caseDepth: 135 },
-      series: { label: "Series", caseThickness: 14.5, caseDepth: 135 },
+      xbox:   { label: "1ère gen", caseThickness: 15,   caseDepth: 135 },
+      x360:   { label: "360",      caseThickness: 14,   caseDepth: 135 },
+      xone:   { label: "One",      caseThickness: 14.5, caseDepth: 135 },
+      series: { label: "Series",   caseThickness: 14.5, caseDepth: 135 },
+    }
+  },
+  sega: {
+    label: "Sega",
+    consoles: {
+      saturn:    { label: "Saturn",    caseThickness: 21, caseDepth: 144 },
+      dreamcast: { label: "Dreamcast",  caseThickness: 10, caseDepth: 142 },
     }
   }
 };
@@ -334,10 +345,10 @@ let state = {
   count: 6,
 };
 
-const WALL_THICK = 2.4;       // épaisseur d'une paroi (latérale et de fond)
+const WALL_THICK = 1.6;       // épaisseur d'une paroi (latérale et de fond) — 4 périmètres à 0.4mm de buse, solide sans surplus
 const CLEARANCE = 1.4;        // jeu d'insertion entre le boîtier et la paroi
-const BASE_THICK = 4;         // épaisseur du socle
-const WALL_HEIGHT = 16;       // hauteur des parois — basse et discrète
+const BASE_THICK = 3;         // épaisseur du socle — toujours rigide pour une pièce plate posée à plat
+const WALL_HEIGHT = 12;       // hauteur des parois — réduite, juste assez pour caler le boîtier
 const FRONT_MARGIN = 6;       // petite marge devant le boîtier, pour qu'il ne dépasse pas du socle
 
 function getConsoleData(){
@@ -386,8 +397,6 @@ function addBoxTriangles(list, cx, cy, cz, sx, sy, sz){
 }
 
 // Même boîte, mais chaque face est un quad entier (4 sommets) plutôt que 2 triangles.
-// Utilisé uniquement pour le rendu visuel : le contour d'une face rectangulaire
-// reste un seul rectangle, sans diagonale de tessellation visible.
 function addBoxQuads(list, cx, cy, cz, sx, sy, sz){
   const x0=cx-sx/2, x1=cx+sx/2;
   const y0=cy-sy/2, y1=cy+sy/2;
@@ -397,55 +406,182 @@ function addBoxQuads(list, cx, cy, cz, sx, sy, sz){
     [x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],
   ];
   const QUAD_FACES = [
-    [3,2,1,0], // arrière (z0)
-    [4,5,6,7], // avant (z1)
-    [0,4,7,3], // gauche
-    [2,6,5,1], // droite
-    [3,7,6,2], // haut
-    [1,5,4,0], // bas
+    [3,2,1,0], [4,5,6,7], [0,4,7,3], [2,6,5,1], [3,7,6,2], [1,5,4,0],
   ];
   QUAD_FACES.forEach(f=> list.push(f.map(i=>v[i])));
 }
 
-function buildTriangleList(dims){
-  const triangles = [];
-
-  // socle plat
-  addBoxTriangles(triangles, 0, BASE_THICK/2, 0, dims.width, BASE_THICK, dims.depth);
-
-  // parois basses, sur toute la profondeur
+/* =========================================================
+   PROFIL EN PEIGNE (vue de profil, plan X/Y)
+   Le socle et les parois sont un seul contour 2D fermé,
+   extrudé une seule fois sur la profondeur. Ça évite que le
+   socle et chaque paroi soient des solides séparés qui se
+   touchent sur le même plan — source des faces internes
+   coplanaires visibles dans le slicer.
+   ========================================================= */
+function buildCombProfile(dims){
   const numWalls = state.count + 1;
   const startX = -dims.width/2 + WALL_THICK/2;
+  const halfBase = dims.width/2;
+  const topBase = BASE_THICK;
+  const topWall = BASE_THICK + dims.wallHeight;
+
+  // On construit le contour en partant du coin bas-gauche, en suivant le bord
+  // du socle puis en montant/descendant sur chaque dent, jusqu'au coin bas-droit,
+  // puis on referme par le dessous.
+  const pts = [];
+  pts.push([-halfBase, 0]); // bas-gauche
 
   for(let i=0; i<numWalls; i++){
     const x = startX + i * dims.slotPitch;
-    addBoxTriangles(triangles, x, BASE_THICK + dims.wallHeight/2, 0, WALL_THICK, dims.wallHeight, dims.depth);
+    const xL = x - WALL_THICK/2;
+    const xR = x + WALL_THICK/2;
+    pts.push([xL, topBase]);
+    pts.push([xL, topWall]);
+    pts.push([xR, topWall]);
+    pts.push([xR, topBase]);
   }
 
-  // paroi de fond : même hauteur que les parois latérales, sur toute la largeur,
-  // empêche les jeux de glisser au-delà du socle.
-  const backZ = dims.depth/2 - WALL_THICK/2;
-  addBoxTriangles(triangles, 0, BASE_THICK + dims.wallHeight/2, backZ, dims.width, dims.wallHeight, WALL_THICK);
+  pts.push([halfBase, 0]); // bas-droit
+
+  // Le contour tel que construit (de gauche à droite, par-dessus chaque dent)
+  // est parcouru dans le sens horaire (CW). On l'inverse pour qu'il soit en
+  // sens anti-horaire (CCW) : la triangulation et l'extrusion latérale qui
+  // suivent supposent toutes les deux un contour CCW pour produire des
+  // normales orientées vers l'extérieur.
+  pts.reverse();
+
+  return pts; // contour fermé implicitement (bas-droit -> bas-gauche en suivant y=0)
+}
+
+// Triangulation par ear clipping : fonctionne pour tout polygone simple
+// (sans trou), y compris non-convexe comme notre profil en peigne. La
+// triangulation en éventail naïve ne suffit pas ici car le contour a des
+// creux (entre deux dents) qu'un simple éventail depuis un coin traverserait.
+function crossZ2D(o,a,b){ return (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0]); }
+
+function pointInTriangle2D(p, a, b, c){
+  const d1 = crossZ2D(a,b,p), d2 = crossZ2D(b,c,p), d3 = crossZ2D(c,a,p);
+  const hasNeg = (d1<0)||(d2<0)||(d3<0);
+  const hasPos = (d1>0)||(d2>0)||(d3>0);
+  return !(hasNeg && hasPos);
+}
+
+function signedArea2D(pts){
+  let s = 0;
+  for(let i=0;i<pts.length;i++){
+    const [x1,y1] = pts[i], [x2,y2] = pts[(i+1)%pts.length];
+    s += (x1*y2 - x2*y1);
+  }
+  return s/2;
+}
+
+function triangulatePolygon(polygon){
+  let pts = polygon.map(p => ({p}));
+  if(signedArea2D(polygon) < 0) pts.reverse(); // s'assurer du sens CCW
+
+  const tris = [];
+  let guard = 0;
+  while(pts.length > 3 && guard < 10000){
+    guard++;
+    let earFound = false;
+    for(let i=0; i<pts.length; i++){
+      const prev = pts[(i-1+pts.length)%pts.length];
+      const curr = pts[i];
+      const next = pts[(i+1)%pts.length];
+      const cross = crossZ2D(prev.p, curr.p, next.p);
+      if(cross <= 1e-9) continue; // sommet réflexe, pas une oreille valide
+
+      let isEar = true;
+      for(let j=0; j<pts.length; j++){
+        if(j===i || pts[j]===prev || pts[j]===next) continue;
+        if(pointInTriangle2D(pts[j].p, prev.p, curr.p, next.p)){ isEar = false; break; }
+      }
+      if(isEar){
+        tris.push([prev.p, curr.p, next.p]);
+        pts.splice(i, 1);
+        earFound = true;
+        break;
+      }
+    }
+    if(!earFound) break; // sécurité : polygone dégénéré, on arrête plutôt que boucler
+  }
+  if(pts.length === 3) tris.push([pts[0].p, pts[1].p, pts[2].p]);
+  return tris;
+}
+
+function buildTriangleList(dims){
+  const triangles = [];
+  const profile = buildCombProfile(dims); // points 2D (x,y), dans le plan, profondeur = z
+
+  const extrudeDepth = dims.depth - WALL_THICK; // le fond occupe la dernière tranche
+  const z0 = -extrudeDepth/2;
+  const z1 = extrudeDepth/2;
+
+  // --- Faces avant et arrière : triangulation du polygone fermé (profil + fermeture en bas) ---
+  const closedProfile = [...profile]; // déjà fermé visuellement par le bas-gauche/bas-droit à y=0
+  const frontTris = triangulatePolygon(closedProfile.map(p=>[p[0], p[1]]));
+  frontTris.forEach(t=>{
+    const [a,b,c] = t;
+    // face avant (z0) : normale doit sortir vers -z
+    triangles.push([[a[0],a[1],z0], [c[0],c[1],z0], [b[0],b[1],z0]]);
+    // face arrière (z1) : normale doit sortir vers +z
+    triangles.push([[a[0],a[1],z1], [b[0],b[1],z1], [c[0],c[1],z1]]);
+  });
+
+  // --- Faces latérales : on extrude chaque segment du contour entre z0 et z1 ---
+  for(let i=0; i<closedProfile.length; i++){
+    const p0 = closedProfile[i];
+    const p1 = closedProfile[(i+1) % closedProfile.length];
+    // quad : p0-z0, p1-z0, p1-z1, p0-z1 — winding choisi pour normale sortante
+    // (le contour est parcouru dans le sens horaire vu de face en regardant -z,
+    // donc la normale "vers l'extérieur" pour un segment (p0->p1) est obtenue par
+    // ce winding précis ; validé numériquement ci-dessous dans les tests)
+    const a = [p0[0],p0[1],z0], b=[p1[0],p1[1],z0], c=[p1[0],p1[1],z1], d=[p0[0],p0[1],z1];
+    triangles.push([a,b,c]);
+    triangles.push([a,c,d]);
+  }
+
+  // --- Paroi de fond : bloc plein qui ferme l'arrière (z1 -> z1+WALL_THICK) ---
+  const backZ0 = z1;
+  const backZ1 = z1 + WALL_THICK;
+  addBoxTriangles(triangles,
+    0, BASE_THICK + dims.wallHeight/2, (backZ0+backZ1)/2,
+    dims.width, dims.wallHeight, WALL_THICK
+  );
 
   return triangles;
 }
 
-// Même géométrie que buildTriangleList, mais en quads pour le rendu visuel.
+// Même géométrie que buildTriangleList, mais en quads/faces complètes pour le rendu visuel,
+// pour éviter toute diagonale de tessellation visible sur les grandes faces planes.
 function buildQuadList(dims){
   const quads = [];
+  const profile = buildCombProfile(dims);
+  const extrudeDepth = dims.depth - WALL_THICK;
+  const z0 = -extrudeDepth/2;
+  const z1 = extrudeDepth/2;
 
-  addBoxQuads(quads, 0, BASE_THICK/2, 0, dims.width, BASE_THICK, dims.depth);
+  // Face avant et arrière comme un seul polygone chacune (pas de découpe en quads,
+  // le renderer gère déjà les polygones à N côtés comme une seule face).
+  quads.push(profile.map(p=>[p[0], p[1], z0]).reverse());
+  quads.push(profile.map(p=>[p[0], p[1], z1]));
 
-  const numWalls = state.count + 1;
-  const startX = -dims.width/2 + WALL_THICK/2;
-
-  for(let i=0; i<numWalls; i++){
-    const x = startX + i * dims.slotPitch;
-    addBoxQuads(quads, x, BASE_THICK + dims.wallHeight/2, 0, WALL_THICK, dims.wallHeight, dims.depth);
+  // Faces latérales : un quad par segment du contour
+  for(let i=0; i<profile.length; i++){
+    const p0 = profile[i];
+    const p1 = profile[(i+1) % profile.length];
+    quads.push([
+      [p0[0],p0[1],z0], [p1[0],p1[1],z0], [p1[0],p1[1],z1], [p0[0],p0[1],z1]
+    ]);
   }
 
-  const backZ = dims.depth/2 - WALL_THICK/2;
-  addBoxQuads(quads, 0, BASE_THICK + dims.wallHeight/2, backZ, dims.width, dims.wallHeight, WALL_THICK);
+  const backZ0 = z1;
+  const backZ1 = z1 + WALL_THICK;
+  addBoxQuads(quads,
+    0, BASE_THICK + dims.wallHeight/2, (backZ0+backZ1)/2,
+    dims.width, dims.wallHeight, WALL_THICK
+  );
 
   return quads;
 }

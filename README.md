@@ -16,7 +16,7 @@ Le problème, c'est que chaque console possède son propre format de boîtier. U
 
 Slotted règle ce problème en générant le modèle à la demande à partir de mesures réelles.
 
-1. **Choisis ta plateforme et ta console** — PlayStation, Nintendo, Xbox ou Sega, du PS1 à la PS5, de la Game Boy à la Switch 2.
+1. **Choisis ta plateforme et ta console** — PlayStation, Nintendo, Xbox ou Sega, du PS1 à la PS5, de la DS à la Switch 2.
 2. **Indique le nombre de jeux** à ranger.
 3. **Télécharge le fichier `.STL`**, déjà dimensionné à l'épaisseur exacte de ton boîtier et prêt à être ouvert dans ton slicer habituel.
 

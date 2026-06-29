@@ -47,10 +47,8 @@ Cette approche "fait main" a une contrepartie : il peut arriver que l'aperçu af
 
 Le projet est constitué de deux pages HTML autonomes, sans dépendance ni étape de build :
 
-- `accueil.html` — page de présentation
+- `index.html` — page de présentation
 - `configurateur.html` — l'outil de génération à proprement parler
-
-Ouvre `accueil.html` dans un navigateur pour démarrer, ou directement `configurateur.html` pour aller droit au but.
 
 ---
 

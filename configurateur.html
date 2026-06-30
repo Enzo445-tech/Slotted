@@ -38,19 +38,16 @@
     align-items:center;
     gap:9px;
   }
-  .logo .mark{
-    width:14px;height:14px;
-    border:1.5px solid var(--white);
-    position:relative;
+  .logo-mark{
+    width:20px;
+    height:20px;
+    object-fit:contain;
     flex:none;
+    /* tant que logo.png n'est pas déposé, l'image cassée est masquée proprement */
+    color:transparent;
   }
-  .logo .mark::before{
+  .logo-mark:before{
     content:'';
-    position:absolute;
-    left:50%;top:-1.5px;bottom:-1.5px;
-    width:1.5px;
-    background:var(--white);
-    transform:translateX(-50%);
   }
   header nav{
     font-family:var(--mono);
@@ -168,6 +165,37 @@
     background:var(--line);
   }
 
+  .stability-alert{
+    display:none;
+    align-items:flex-start;
+    gap:10px;
+    margin-top:14px;
+    padding:12px 14px;
+    background:rgba(247,181,123,0.08);
+    border:1px solid rgba(247,181,123,0.35);
+    border-radius:6px;
+    animation:alertIn .2s ease;
+  }
+  .stability-alert.visible{display:flex;}
+  @keyframes alertIn{
+    from{opacity:0; transform:translateY(-4px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  .stability-alert-icon{
+    color:#f7b57b;
+    flex:none;
+    margin-top:1px;
+  }
+  .stability-alert-text{
+    font-size:12px;
+    line-height:1.55;
+    color:#e0bb98;
+  }
+  .stability-alert-text strong{
+    color:#f7b57b;
+    font-weight:700;
+  }
+
   .divider-label{
     font-family:var(--mono);
     font-size:10px;
@@ -220,6 +248,87 @@
     font-family:var(--mono);
   }
 
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.7);
+    backdrop-filter:blur(3px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    padding:24px;
+  }
+  .modal-overlay.visible{display:flex;}
+  .modal-box{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    max-width:440px;
+    width:100%;
+    padding:28px;
+    animation:modalIn .18s ease;
+  }
+  @keyframes modalIn{
+    from{opacity:0; transform:translateY(8px) scale(0.98);}
+    to{opacity:1; transform:translateY(0) scale(1);}
+  }
+  .modal-header{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:16px;
+    color:var(--white);
+  }
+  .modal-header h3{
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  .modal-body p{
+    color:var(--text-dim);
+    font-size:13px;
+    line-height:1.6;
+    margin-bottom:12px;
+  }
+  .modal-body strong{
+    color:var(--white);
+    font-weight:700;
+  }
+  .modal-body .modal-sub{
+    font-size:12px;
+    color:#5e5e5c;
+    margin-bottom:0;
+  }
+  .modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:22px;
+  }
+  .modal-cancel, .modal-accept{
+    flex:1;
+    border:none;
+    padding:13px;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+    font-family:inherit;
+    border-radius:6px;
+    transition:opacity .15s, transform .1s;
+  }
+  .modal-cancel{
+    background:transparent;
+    color:var(--text-dim);
+    border:1px solid var(--line);
+  }
+  .modal-cancel:hover{color:var(--text); border-color:#3a3a38;}
+  .modal-accept{
+    background:var(--white);
+    color:var(--bg);
+  }
+  .modal-accept:hover{opacity:0.85;}
+  .modal-accept:active, .modal-cancel:active{transform:scale(0.97);}
+
   #viewport{
     position:relative;
     background:var(--bg);
@@ -252,7 +361,7 @@
 <body>
 
 <header>
-  <div class="logo"><span class="mark"></span>Slotted</div>
+  <div class="logo"><img src="logo.png" alt="Slotted" class="logo-mark"><!-- Dépose ton fichier logo.png dans le même dossier que cette page -->Slotted</div>
   <nav>GÉNÉRATEUR DE SUPPORT DE JEUX</nav>
 </header>
 
@@ -275,6 +384,16 @@
     <div class="field">
       <div class="field-head"><label>Nombre de jeux</label><span class="val" id="count-val">6</span></div>
       <input type="range" id="count-range" min="2" max="16" value="6">
+      <div class="stability-alert" id="stability-alert">
+        <svg class="stability-alert-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 1.5L15 14H1L8 1.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+          <path d="M8 6.2V9.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <circle cx="8" cy="11.6" r="0.9" fill="currentColor"/>
+        </svg>
+        <div class="stability-alert-text">
+          <strong>En dessous de 6 emplacements</strong>, le rendu esthétique du support est moins abouti et sa stabilité au sol n'est pas garantie à 100 %. Pense à vérifier l'appui avant impression.
+        </div>
+      </div>
     </div>
 
     <div class="specs" id="specs"></div>
@@ -289,6 +408,28 @@
     <div class="vp-hint">CLIC-GLISSER : ORBITER &nbsp;·&nbsp; MOLETTE : ZOOM</div>
   </div>
 </main>
+
+<div class="modal-overlay" id="license-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <circle cx="11" cy="11" r="9.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M11 7v5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        <circle cx="11" cy="15" r="0.9" fill="currentColor"/>
+      </svg>
+      <h3>Avant de télécharger</h3>
+    </div>
+    <div class="modal-body">
+      <p>Ce modèle est mis à disposition sous licence <strong>Creative Commons BY-NC</strong> (attribution, usage non commercial).</p>
+      <p>La <strong>vente</strong> de ce fichier, de ses dérivés, ou des pièces imprimées à partir de celui-ci est <strong>interdite</strong>. Toute exploitation commerciale non autorisée pourra faire l'objet de poursuites.</p>
+      <p class="modal-sub">Tu peux librement l'imprimer, le modifier et le partager pour un usage personnel, en créditant Slotted.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="modal-cancel">Annuler</button>
+      <button class="modal-accept" id="modal-accept">J'accepte les conditions</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* =========================================================
@@ -345,7 +486,7 @@ let state = {
   count: 6,
 };
 
-const WALL_THICK = 1.6;       // épaisseur d'une paroi (latérale et de fond) — 4 périmètres à 0.4mm de buse, solide sans surplus
+const WALL_THICK = 1.2;       // épaisseur d'une paroi (latérale et de fond) — 3 périmètres à 0.4mm de buse, fin sans fragiliser une paroi basse non porteuse
 const CLEARANCE = 1.4;        // jeu d'insertion entre le boîtier et la paroi
 const BASE_THICK = 3;         // épaisseur du socle — toujours rigide pour une pièce plate posée à plat
 const WALL_HEIGHT = 12;       // hauteur des parois — réduite, juste assez pour caler le boîtier
@@ -510,6 +651,105 @@ function triangulatePolygon(polygon){
   return tris;
 }
 
+/* =========================================================
+   WATERMARK GRAVÉ "SLOTTED"
+   Gravé dans le dessus du socle, au milieu d'un slot central,
+   orienté dans le sens du jeu (le long de la profondeur).
+   Invisible dans l'aperçu du configurateur — n'apparaît que
+   dans le fichier .STL exporté, caché sous le boîtier une fois
+   le jeu inséré.
+
+   Technique : pas de vrai moteur CSG disponible ici, donc le
+   "creux" est simulé en ajoutant une fine couche en relief sur
+   le dessus du socle PARTOUT SAUF aux pixels du mot. Le
+   contraste de hauteur (couche présente vs niveau du socle
+   d'origine) rend le mot visible en négatif une fois imprimé.
+   ========================================================= */
+const WATERMARK_TEXT = "SLOTTED";
+const WATERMARK_FONT = { // bitmap 5 colonnes x 7 lignes, 1 = matière, 0 = creux
+  S: ['01111','10000','10000','01110','00001','00001','11110'],
+  L: ['10000','10000','10000','10000','10000','10000','11111'],
+  O: ['01110','10001','10001','10001','10001','10001','01110'],
+  T: ['11111','00100','00100','00100','00100','00100','00100'],
+  E: ['11111','10000','10000','11110','10000','10000','11111'],
+  D: ['11110','10001','10001','10001','10001','10001','11110'],
+};
+const WATERMARK_PIXEL = 1.1;   // taille d'un pixel du mot, en mm
+const WATERMARK_RELIEF = 0.6;  // hauteur de la fine couche en relief (= profondeur de gravure perçue)
+const WATERMARK_LETTER_GAP = 1; // espace (en pixels) entre deux lettres
+
+function buildWatermarkPixels(){
+  // Construit la liste des pixels allumés du mot complet, en coordonnées locales
+  // (col, row) avant rotation — col grandit vers la droite, row vers le bas.
+  const pixels = [];
+  let colOffset = 0;
+  for(const ch of WATERMARK_TEXT){
+    const glyph = WATERMARK_FONT[ch];
+    if(!glyph) continue;
+    for(let row=0; row<glyph.length; row++){
+      for(let col=0; col<glyph[row].length; col++){
+        if(glyph[row][col] === '1'){
+          pixels.push([colOffset + col, row]);
+        }
+      }
+    }
+    colOffset += glyph[0].length + WATERMARK_LETTER_GAP;
+  }
+  return { pixels, totalCols: colOffset - WATERMARK_LETTER_GAP, totalRows: 7 };
+}
+
+// Ajoute le relief du watermark, centré dans le slot du milieu, le mot orienté
+// le long de Z (la profondeur, donc le sens du jeu une fois inséré).
+function addWatermarkTriangles(list, dims){
+  const { pixels, totalCols, totalRows } = buildWatermarkPixels();
+
+  const wordDepth = totalCols * WATERMARK_PIXEL;  // étendue le long de Z
+  const wordWidth = totalRows * WATERMARK_PIXEL;  // étendue le long de X
+
+  // Si le mot est plus profond que l'espace disponible (cas d'une très petite
+  // console ou très peu de profondeur), on n'essaie pas de le faire rentrer de force.
+  if(wordDepth > dims.depth - WALL_THICK*2 - 4) return;
+
+  // Slot central : on choisit l'emplacement du milieu parmi les state.count slots.
+  const numWalls = state.count + 1;
+  const startX = -dims.width/2 + WALL_THICK/2;
+  const centerSlotIndex = Math.floor((state.count - 1) / 2);
+  const slotCenterX = startX + centerSlotIndex * dims.slotPitch + dims.slotPitch/2;
+
+  // Si le mot est plus large que le slot, on ne grave rien plutôt que déborder
+  // sur les parois voisines.
+  const slotInnerWidth = dims.slotPitch - WALL_THICK;
+  if(wordWidth > slotInnerWidth - 2) return;
+
+  const extrudeDepth = dims.depth - WALL_THICK;
+  const startZ = -wordDepth/2; // centré sur la profondeur du socle (z=0 au milieu)
+  const startX_local = slotCenterX - wordWidth/2;
+
+  const topY = BASE_THICK; // dessus du socle d'origine
+  const reliefTopY = BASE_THICK + WATERMARK_RELIEF;
+
+  // Pour chaque pixel ALLUMÉ (= matière du mot), on laisse le socle à son niveau
+  // d'origine. Pour chaque pixel ÉTEINT dans la grille englobante du mot, on
+  // ajoute un petit relief. Résultat : le mot apparaît en creux par rapport à
+  // son pourtour, qui lui est légèrement surélevé.
+  const pixelSet = new Set(pixels.map(p => p[0]+','+p[1]));
+
+  for(let col=0; col<totalCols; col++){
+    for(let row=0; row<totalRows; row++){
+      const isLetterPixel = pixelSet.has(col+','+row);
+      if(isLetterPixel) continue; // ce pixel reste au niveau du socle (creux apparent)
+
+      // ce pixel fait partie du fond autour des lettres : on ajoute le relief
+      const cz = startZ + (col + 0.5) * WATERMARK_PIXEL; // le long de Z (profondeur, sens du jeu)
+      const cx = startX_local + (row + 0.5) * WATERMARK_PIXEL; // le long de X (largeur du slot)
+      addBoxTriangles(list,
+        cx, (topY + reliefTopY)/2, cz,
+        WATERMARK_PIXEL * 0.92, WATERMARK_RELIEF, WATERMARK_PIXEL * 0.92
+      );
+    }
+  }
+}
+
 function buildTriangleList(dims){
   const triangles = [];
   const profile = buildCombProfile(dims); // points 2D (x,y), dans le plan, profondeur = z
@@ -549,6 +789,9 @@ function buildTriangleList(dims){
     0, BASE_THICK + dims.wallHeight/2, (backZ0+backZ1)/2,
     dims.width, dims.wallHeight, WALL_THICK
   );
+
+  // --- Watermark gravé, uniquement dans l'export, jamais dans l'aperçu visuel ---
+  addWatermarkTriangles(triangles, dims);
 
   return triangles;
 }
@@ -642,13 +885,30 @@ function exportSTL(){
   URL.revokeObjectURL(url);
 }
 
+const licenseModal = document.getElementById('license-modal');
+
 document.getElementById('download-btn').addEventListener('click', function(){
+  licenseModal.classList.add('visible');
+});
+
+document.getElementById('modal-cancel').addEventListener('click', function(){
+  licenseModal.classList.remove('visible');
+});
+
+document.getElementById('modal-accept').addEventListener('click', function(){
   try{
     exportSTL();
   } catch(err){
     console.error('Erreur export STL:', err);
     alert('Le fichier n\'a pas pu être généré. Détail technique : ' + err.message);
+  } finally {
+    licenseModal.classList.remove('visible');
   }
+});
+
+// Fermeture du modal en cliquant en dehors de la boîte
+licenseModal.addEventListener('click', function(e){
+  if(e.target === licenseModal) licenseModal.classList.remove('visible');
 });
 
 /* =========================================================
@@ -843,8 +1103,15 @@ function buildConsoleSelect(){
   });
 }
 selectConsole.addEventListener('change', e=>{ state.console = e.target.value; rebuild(); });
-countRange.addEventListener('input', e=>{ state.count = parseInt(e.target.value); countVal.textContent = state.count; rebuild(); });
+const stabilityAlert = document.getElementById('stability-alert');
+countRange.addEventListener('input', e=>{
+  state.count = parseInt(e.target.value);
+  countVal.textContent = state.count;
+  stabilityAlert.classList.toggle('visible', state.count < 6);
+  rebuild();
+});
 
+stabilityAlert.classList.toggle('visible', state.count < 6);
 buildBrandSeg();
 buildConsoleSelect();
 rebuild();

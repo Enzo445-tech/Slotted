@@ -661,31 +661,24 @@ function triangulatePolygon(polygon){
 }
 
 /* =========================================================
-   WATERMARK GRAVÉ "SLOTTED"
-   Gravé dans le dessus du socle, au milieu d'un slot central,
-   orienté dans le sens du jeu (le long de la profondeur).
-   Invisible dans l'aperçu du configurateur — n'apparaît que
-   dans le fichier .STL exporté, caché sous le boîtier une fois
-   le jeu inséré.
-
-   Technique : pas de vrai moteur CSG disponible ici, donc le
-   "creux" est simulé en ajoutant une fine couche en relief sur
-   le dessus du socle PARTOUT SAUF aux pixels du mot. Le
-   contraste de hauteur (couche présente vs niveau du socle
-   d'origine) rend le mot visible en négatif une fois imprimé.
+   WATERMARK GRAVÉ "Slotted"
+   Gravure réelle dans le dessus du socle, à l'intérieur du
+   premier emplacement et orientée dans le sens du boîtier.
+   Les lettres sont abaissées de 0,6 mm dans la base.
    ========================================================= */
-const WATERMARK_TEXT = "SLOTTED";
-const WATERMARK_FONT = { // bitmap 5 colonnes x 7 lignes, 1 = matière, 0 = creux
-  S: ['01111','10000','10000','01110','00001','00001','11110'],
-  L: ['10000','10000','10000','10000','10000','10000','11111'],
-  O: ['01110','10001','10001','10001','10001','10001','01110'],
-  T: ['11111','00100','00100','00100','00100','00100','00100'],
-  E: ['11111','10000','10000','11110','10000','10000','11111'],
-  D: ['11110','10001','10001','10001','10001','10001','11110'],
+const WATERMARK_TEXT = "Slotted";
+const WATERMARK_FONT = { // bitmap 5 colonnes x 7 lignes
+  S: ['01110','10000','10000','01110','00001','00001','11110'],
+  l: ['01100','00100','00100','00100','00100','00100','01110'],
+  o: ['00000','00000','01110','10001','10001','10001','01110'],
+  t: ['00100','00100','11111','00100','00100','00100','00011'],
+  e: ['00000','00000','01110','10001','11111','10000','01110'],
+  d: ['00001','00001','01111','10001','10001','10001','01111'],
 };
-const WATERMARK_PIXEL = 1.1;   // taille d'un pixel du mot, en mm
-const WATERMARK_RELIEF = 0.6;  // hauteur de la fine couche en relief (= profondeur de gravure perçue)
-const WATERMARK_LETTER_GAP = 1; // espace (en pixels) entre deux lettres
+const WATERMARK_PIXEL = 1.1;
+const WATERMARK_DEPTH = 0.6;
+const WATERMARK_LETTER_GAP = 1;
+const WATERMARK_WALL_MARGIN = 8;
 
 function buildWatermarkPixels(){
   // Construit la liste des pixels allumés du mot complet, en coordonnées locales
@@ -707,56 +700,224 @@ function buildWatermarkPixels(){
   return { pixels, totalCols: colOffset - WATERMARK_LETTER_GAP, totalRows: 7 };
 }
 
-// Ajoute le relief du watermark, centré dans le slot du milieu, le mot orienté
-// le long de Z (la profondeur, donc le sens du jeu une fois inséré).
-function addWatermarkTriangles(list, dims){
+function buildWatermarkLayout(dims){
   const { pixels, totalCols, totalRows } = buildWatermarkPixels();
+  const startWallX = -dims.width/2 + WALL_THICK/2;
+  const slotLeft = startWallX + WALL_THICK/2;
+  const slotRight = startWallX + dims.slotPitch - WALL_THICK/2;
+  const slotWidth = slotRight - slotLeft;
+  const pixelSize = Math.min(WATERMARK_PIXEL, (slotWidth - 2) / totalRows);
+  const wordLength = totalCols * pixelSize;
+  const wordWidth = totalRows * pixelSize;
+  const { frontZ, backWallFrontZ } = computeDepthLayout(dims);
+  const wordBackZ = backWallFrontZ - WATERMARK_WALL_MARGIN;
+  const wordFrontZ = wordBackZ - wordLength;
 
-  const wordDepth = totalCols * WATERMARK_PIXEL;  // étendue le long de Z
-  const wordWidth = totalRows * WATERMARK_PIXEL;  // étendue le long de X
+  if(pixelSize < 0.65 || wordFrontZ < frontZ + WATERMARK_WALL_MARGIN) return null;
 
-  // Si le mot est plus profond que l'espace disponible (cas d'une très petite
-  // console ou très peu de profondeur), on n'essaie pas de le faire rentrer de force.
-  if(wordDepth > dims.depth - WALL_THICK*2 - 4) return;
+  const wordLeftX = (slotLeft + slotRight - wordWidth) / 2;
+  const recessed = pixels.map(([col, row]) => ({
+    x0: wordLeftX + row * pixelSize,
+    x1: wordLeftX + (row + 1) * pixelSize,
+    // La première lettre commence près de la paroi arrière, comme sur la référence.
+    z0: wordBackZ - (col + 1) * pixelSize,
+    z1: wordBackZ - col * pixelSize,
+  }));
 
-  // Slot central : on choisit l'emplacement du milieu parmi les state.count slots.
-  const numWalls = state.count + 1;
-  const startX = -dims.width/2 + WALL_THICK/2;
-  const centerSlotIndex = Math.floor((state.count - 1) / 2);
-  const slotCenterX = startX + centerSlotIndex * dims.slotPitch + dims.slotPitch/2;
+  return {
+    slotLeft, slotRight, frontZ, backWallFrontZ,
+    wordLeftX, wordRightX: wordLeftX + wordWidth,
+    wordFrontZ, wordBackZ, recessed
+  };
+}
 
-  // Si le mot est plus large que le slot, on ne grave rien plutôt que déborder
-  // sur les parois voisines.
-  const slotInnerWidth = dims.slotPitch - WALL_THICK;
-  if(wordWidth > slotInnerWidth - 2) return;
+// Remplace la grande face plane du premier slot par une grille de hauteurs :
+// niveau normal autour du mot, niveau abaissé sous les lettres, plus les parois
+// verticales qui ferment chaque bord de la gravure.
+function buildEngravedFloorQuads(dims){
+  const layout = buildWatermarkLayout(dims);
+  if(!layout) return [];
 
-  const extrudeDepth = dims.depth - WALL_THICK;
-  const startZ = -wordDepth/2; // centré sur la profondeur du socle (z=0 au milieu)
-  const startX_local = slotCenterX - wordWidth/2;
+  const xBreaks = new Set([layout.wordLeftX, layout.wordRightX]);
+  const zBreaks = new Set([layout.wordFrontZ, layout.wordBackZ]);
+  layout.recessed.forEach(cell=>{
+    xBreaks.add(cell.x0); xBreaks.add(cell.x1);
+    zBreaks.add(cell.z0); zBreaks.add(cell.z1);
+  });
+  const xs = [...xBreaks].sort((a,b)=>a-b);
+  const zs = [...zBreaks].sort((a,b)=>a-b);
+  const heights = [];
+  const quads = [];
 
-  const topY = BASE_THICK; // dessus du socle d'origine
-  const reliefTopY = BASE_THICK + WATERMARK_RELIEF;
+  // Quatre faces entourent la zone du mot. Leur bord extérieur reste un seul
+  // segment afin de conserver un maillage propre avec les parois existantes.
+  const innerFront = xs.map(x=>[x,BASE_THICK,layout.wordFrontZ]);
+  const innerBack = xs.map(x=>[x,BASE_THICK,layout.wordBackZ]);
+  const innerLeft = zs.map(z=>[layout.wordLeftX,BASE_THICK,z]);
+  const innerRight = zs.map(z=>[layout.wordRightX,BASE_THICK,z]);
+  quads.push([
+    [layout.slotLeft,BASE_THICK,layout.frontZ],
+    [layout.slotLeft,BASE_THICK,layout.wordFrontZ],
+    ...innerFront,
+    [layout.slotRight,BASE_THICK,layout.wordFrontZ],
+    [layout.slotRight,BASE_THICK,layout.frontZ],
+  ].reverse());
+  quads.push([
+    [layout.slotLeft,BASE_THICK,layout.backWallFrontZ],
+    [layout.slotRight,BASE_THICK,layout.backWallFrontZ],
+    [layout.slotRight,BASE_THICK,layout.wordBackZ],
+    ...innerBack.slice().reverse(),
+    [layout.slotLeft,BASE_THICK,layout.wordBackZ],
+  ].reverse());
+  quads.push([
+    [layout.slotLeft,BASE_THICK,layout.wordFrontZ],
+    [layout.slotLeft,BASE_THICK,layout.wordBackZ],
+    ...innerLeft.slice().reverse(),
+  ]);
+  quads.push([
+    ...innerRight,
+    [layout.slotRight,BASE_THICK,layout.wordBackZ],
+    [layout.slotRight,BASE_THICK,layout.wordFrontZ],
+  ]);
 
-  // Pour chaque pixel ALLUMÉ (= matière du mot), on laisse le socle à son niveau
-  // d'origine. Pour chaque pixel ÉTEINT dans la grille englobante du mot, on
-  // ajoute un petit relief. Résultat : le mot apparaît en creux par rapport à
-  // son pourtour, qui lui est légèrement surélevé.
-  const pixelSet = new Set(pixels.map(p => p[0]+','+p[1]));
-
-  for(let col=0; col<totalCols; col++){
-    for(let row=0; row<totalRows; row++){
-      const isLetterPixel = pixelSet.has(col+','+row);
-      if(isLetterPixel) continue; // ce pixel reste au niveau du socle (creux apparent)
-
-      // ce pixel fait partie du fond autour des lettres : on ajoute le relief
-      const cz = startZ + (col + 0.5) * WATERMARK_PIXEL; // le long de Z (profondeur, sens du jeu)
-      const cx = startX_local + (row + 0.5) * WATERMARK_PIXEL; // le long de X (largeur du slot)
-      addBoxTriangles(list,
-        cx, (topY + reliefTopY)/2, cz,
-        WATERMARK_PIXEL * 0.92, WATERMARK_RELIEF, WATERMARK_PIXEL * 0.92
+  for(let xi=0; xi<xs.length-1; xi++){
+    heights[xi] = [];
+    for(let zi=0; zi<zs.length-1; zi++){
+      const cx = (xs[xi]+xs[xi+1])/2;
+      const cz = (zs[zi]+zs[zi+1])/2;
+      const engraved = layout.recessed.some(cell =>
+        cx > cell.x0 && cx < cell.x1 && cz > cell.z0 && cz < cell.z1
       );
+      const y = BASE_THICK - (engraved ? WATERMARK_DEPTH : 0);
+      heights[xi][zi] = y;
     }
   }
+
+  // Évite les contacts uniquement par un coin entre deux pixels gravés : ils
+  // créeraient une arête non-manifold dans le STL. Le petit pont ajouté reste
+  // invisible à l'œil mais rend chaque lettre topologiquement propre.
+  let checkerboardFixed = true;
+  let checkerboardPass = 0;
+  while(checkerboardFixed && checkerboardPass++ < 8){
+    checkerboardFixed = false;
+    for(let xi=0; xi<xs.length-2; xi++){
+      for(let zi=0; zi<zs.length-2; zi++){
+        const a=heights[xi][zi], b=heights[xi+1][zi];
+        const c=heights[xi][zi+1], d=heights[xi+1][zi+1];
+        if(a===d && b===c && a!==b){
+          heights[xi+1][zi] = Math.min(a,b);
+          checkerboardFixed = true;
+        }
+      }
+    }
+  }
+
+  for(let xi=0; xi<xs.length-1; xi++){
+    for(let zi=0; zi<zs.length-1; zi++){
+      const y = heights[xi][zi];
+      quads.push([
+        [xs[xi],y,zs[zi]], [xs[xi],y,zs[zi+1]],
+        [xs[xi+1],y,zs[zi+1]], [xs[xi+1],y,zs[zi]]
+      ]);
+    }
+  }
+
+  // Parois des changements de niveau sur X.
+  for(let xi=0; xi<xs.length-2; xi++){
+    for(let zi=0; zi<zs.length-1; zi++){
+      const leftY = heights[xi][zi], rightY = heights[xi+1][zi];
+      if(leftY === rightY) continue;
+      const x = xs[xi+1], low = Math.min(leftY,rightY), high = Math.max(leftY,rightY);
+      const quad = [[x,low,zs[zi]],[x,low,zs[zi+1]],[x,high,zs[zi+1]],[x,high,zs[zi]]];
+      quads.push(leftY < rightY ? quad : quad.reverse());
+    }
+  }
+
+  // Parois des changements de niveau sur Z.
+  for(let xi=0; xi<xs.length-1; xi++){
+    for(let zi=0; zi<zs.length-2; zi++){
+      const frontY = heights[xi][zi], backY = heights[xi][zi+1];
+      if(frontY === backY) continue;
+      const z = zs[zi+1], low = Math.min(frontY,backY), high = Math.max(frontY,backY);
+      const quad = [[xs[xi],low,z],[xs[xi+1],low,z],[xs[xi+1],high,z],[xs[xi],high,z]];
+      quads.push(frontY < backY ? quad.reverse() : quad);
+    }
+  }
+
+  // Fermeture des lettres qui touchent le bord de leur rectangle englobant.
+  for(let xi=0; xi<xs.length-1; xi++){
+    const frontY = heights[xi][0];
+    if(frontY < BASE_THICK) quads.push([
+      [xs[xi],frontY,layout.wordFrontZ], [xs[xi+1],frontY,layout.wordFrontZ],
+      [xs[xi+1],BASE_THICK,layout.wordFrontZ], [xs[xi],BASE_THICK,layout.wordFrontZ]
+    ]);
+    const backY = heights[xi][zs.length-2];
+    if(backY < BASE_THICK) quads.push([
+      [xs[xi+1],backY,layout.wordBackZ], [xs[xi],backY,layout.wordBackZ],
+      [xs[xi],BASE_THICK,layout.wordBackZ], [xs[xi+1],BASE_THICK,layout.wordBackZ]
+    ]);
+  }
+  for(let zi=0; zi<zs.length-1; zi++){
+    const leftY = heights[0][zi];
+    if(leftY < BASE_THICK) quads.push([
+      [layout.wordLeftX,leftY,zs[zi+1]], [layout.wordLeftX,leftY,zs[zi]],
+      [layout.wordLeftX,BASE_THICK,zs[zi]], [layout.wordLeftX,BASE_THICK,zs[zi+1]]
+    ]);
+    const rightY = heights[xs.length-2][zi];
+    if(rightY < BASE_THICK) quads.push([
+      [layout.wordRightX,rightY,zs[zi]], [layout.wordRightX,rightY,zs[zi+1]],
+      [layout.wordRightX,BASE_THICK,zs[zi+1]], [layout.wordRightX,BASE_THICK,zs[zi]]
+    ]);
+  }
+
+  return quads;
+}
+
+function isWatermarkFloorSegment(p0, p1, layout){
+  if(!layout || p0[1] !== BASE_THICK || p1[1] !== BASE_THICK) return false;
+  const minX = Math.min(p0[0], p1[0]);
+  const maxX = Math.max(p0[0], p1[0]);
+  return Math.abs(minX - layout.slotLeft) < 1e-7 &&
+         Math.abs(maxX - layout.slotRight) < 1e-7;
+}
+
+function isWatermarkSideSegment(p0, p1, layout){
+  if(!layout) return false;
+  const x = p0[0];
+  const isSlotSide = Math.abs(x-layout.slotLeft) < 1e-7 ||
+                     Math.abs(x-layout.slotRight) < 1e-7;
+  return isSlotSide && p0[0] === p1[0] &&
+         Math.min(p0[1],p1[1]) === BASE_THICK;
+}
+
+function buildSplitSideFace(p0, p1, z0, z1, layout){
+  if(p0[1] === BASE_THICK){
+    return [
+      [p1[0],p1[1],z0], [p1[0],p1[1],z1],
+      [p0[0],p0[1],z1], [p0[0],p0[1],layout.wordBackZ],
+      [p0[0],p0[1],layout.wordFrontZ], [p0[0],p0[1],z0]
+    ];
+  }
+  return [
+    [p0[0],p0[1],z0], [p1[0],p1[1],z0],
+    [p1[0],p1[1],layout.wordFrontZ], [p1[0],p1[1],layout.wordBackZ],
+    [p1[0],p1[1],z1], [p0[0],p0[1],z1]
+  ];
+}
+
+function addFaceTriangles(list, face){
+  for(let i=1;i<face.length-1;i++) list.push([face[0],face[i],face[i+1]]);
+}
+
+// Dans l'aperçu, on ne tesselle pas tout le sol du slot : seules les lettres
+// sont dessinées, pour rester lisibles sans afficher la grille technique du STL.
+function buildWatermarkPreviewQuads(dims){
+  const layout = buildWatermarkLayout(dims);
+  if(!layout) return [];
+  return layout.recessed.map(cell=>[
+    [cell.x0,BASE_THICK+0.002,cell.z0], [cell.x0,BASE_THICK+0.002,cell.z1],
+    [cell.x1,BASE_THICK+0.002,cell.z1], [cell.x1,BASE_THICK+0.002,cell.z0]
+  ]);
 }
 
 function buildTriangleList(dims){
@@ -766,6 +927,8 @@ function buildTriangleList(dims){
 
   // --- Faces avant et arrière : triangulation du polygone fermé (profil + fermeture en bas) ---
   const closedProfile = [...profile]; // déjà fermé visuellement par le bas-gauche/bas-droit à y=0
+  const watermarkLayout = buildWatermarkLayout(dims);
+  const engravedFloorQuads = buildEngravedFloorQuads(dims);
   const frontTris = triangulatePolygon(closedProfile.map(p=>[p[0], p[1]]));
   frontTris.forEach(t=>{
     const [a,b,c] = t;
@@ -779,6 +942,14 @@ function buildTriangleList(dims){
   for(let i=0; i<closedProfile.length; i++){
     const p0 = closedProfile[i];
     const p1 = closedProfile[(i+1) % closedProfile.length];
+    if(isWatermarkFloorSegment(p0, p1, watermarkLayout)){
+      engravedFloorQuads.forEach(face=>addFaceTriangles(triangles, face));
+      continue;
+    }
+    if(isWatermarkSideSegment(p0, p1, watermarkLayout)){
+      addFaceTriangles(triangles, buildSplitSideFace(p0,p1,z0,z1,watermarkLayout));
+      continue;
+    }
     // quad : p0-z0, p1-z0, p1-z1, p0-z1 — winding choisi pour normale sortante
     // (le contour est parcouru dans le sens horaire vu de face en regardant -z,
     // donc la normale "vers l'extérieur" pour un segment (p0->p1) est obtenue par
@@ -796,9 +967,6 @@ function buildTriangleList(dims){
     0, totalHeight/2, (backZ0+backZ1)/2,
     dims.width, totalHeight, WALL_THICK
   );
-
-  // --- Watermark gravé, uniquement dans l'export, jamais dans l'aperçu visuel ---
-  addWatermarkTriangles(triangles, dims);
 
   return triangles;
 }
@@ -831,6 +999,8 @@ function buildQuadList(dims){
     0, totalHeight/2, (backZ0+backZ1)/2,
     dims.width, totalHeight, WALL_THICK
   );
+
+  quads.push(...buildWatermarkPreviewQuads(dims));
 
   return quads;
 }

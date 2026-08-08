@@ -511,6 +511,15 @@ function computeDimensions(){
   };
 }
 
+// Toute la pièce reste comprise dans la profondeur annoncée. La paroi arrière
+// occupe la dernière tranche du socle au lieu d'être ajoutée au-delà de celui-ci.
+function computeDepthLayout(dims){
+  const frontZ = -dims.depth / 2;
+  const backZ = dims.depth / 2;
+  const backWallFrontZ = backZ - WALL_THICK;
+  return { frontZ, backWallFrontZ, backZ };
+}
+
 /* =========================================================
    GEOMETRIE PARTAGÉE
    Un socle plat + une rangée de petites parois rectangulaires
@@ -753,10 +762,7 @@ function addWatermarkTriangles(list, dims){
 function buildTriangleList(dims){
   const triangles = [];
   const profile = buildCombProfile(dims); // points 2D (x,y), dans le plan, profondeur = z
-
-  const extrudeDepth = dims.depth - WALL_THICK; // le fond occupe la dernière tranche
-  const z0 = -extrudeDepth/2;
-  const z1 = extrudeDepth/2;
+  const { frontZ: z0, backWallFrontZ: z1, backZ } = computeDepthLayout(dims);
 
   // --- Faces avant et arrière : triangulation du polygone fermé (profil + fermeture en bas) ---
   const closedProfile = [...profile]; // déjà fermé visuellement par le bas-gauche/bas-droit à y=0
@@ -782,12 +788,13 @@ function buildTriangleList(dims){
     triangles.push([a,c,d]);
   }
 
-  // --- Paroi de fond : bloc plein qui ferme l'arrière (z1 -> z1+WALL_THICK) ---
+  // --- Paroi de fond : dernière tranche du socle, sans dépassement ---
   const backZ0 = z1;
-  const backZ1 = z1 + WALL_THICK;
+  const backZ1 = backZ;
+  const totalHeight = BASE_THICK + dims.wallHeight;
   addBoxTriangles(triangles,
-    0, BASE_THICK + dims.wallHeight/2, (backZ0+backZ1)/2,
-    dims.width, dims.wallHeight, WALL_THICK
+    0, totalHeight/2, (backZ0+backZ1)/2,
+    dims.width, totalHeight, WALL_THICK
   );
 
   // --- Watermark gravé, uniquement dans l'export, jamais dans l'aperçu visuel ---
@@ -801,9 +808,7 @@ function buildTriangleList(dims){
 function buildQuadList(dims){
   const quads = [];
   const profile = buildCombProfile(dims);
-  const extrudeDepth = dims.depth - WALL_THICK;
-  const z0 = -extrudeDepth/2;
-  const z1 = extrudeDepth/2;
+  const { frontZ: z0, backWallFrontZ: z1, backZ } = computeDepthLayout(dims);
 
   // Face avant et arrière comme un seul polygone chacune (pas de découpe en quads,
   // le renderer gère déjà les polygones à N côtés comme une seule face).
@@ -820,10 +825,11 @@ function buildQuadList(dims){
   }
 
   const backZ0 = z1;
-  const backZ1 = z1 + WALL_THICK;
+  const backZ1 = backZ;
+  const totalHeight = BASE_THICK + dims.wallHeight;
   addBoxQuads(quads,
-    0, BASE_THICK + dims.wallHeight/2, (backZ0+backZ1)/2,
-    dims.width, dims.wallHeight, WALL_THICK
+    0, totalHeight/2, (backZ0+backZ1)/2,
+    dims.width, totalHeight, WALL_THICK
   );
 
   return quads;
@@ -1050,7 +1056,9 @@ function rebuild(){
   const dims = computeDimensions();
   currentDims = dims;
   currentQuads = buildQuadList(dims);
-  orbit.radius = Math.max(180, dims.width * 1.5);
+  // Cadre automatiquement la pièce entière, y compris les consoles profondes
+  // et les petits supports dont la profondeur dépasse largement la largeur.
+  orbit.radius = Math.max(180, Math.hypot(dims.width, dims.depth) * 1.5);
   safeRender();
 
   try{

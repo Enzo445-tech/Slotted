@@ -717,11 +717,12 @@ function buildWatermarkLayout(dims){
 
   const wordLeftX = (slotLeft + slotRight - wordWidth) / 2;
   const recessed = pixels.map(([col, row]) => ({
-    x0: wordLeftX + row * pixelSize,
-    x1: wordLeftX + (row + 1) * pixelSize,
-    // La première lettre commence près de la paroi arrière, comme sur la référence.
-    z0: wordBackZ - (col + 1) * pixelSize,
-    z1: wordBackZ - col * pixelSize,
+    // Rotation de 180° sur le plan du socle pour que le texte soit lisible
+    // depuis l'avant du support dans le slicer et sur la pièce imprimée.
+    x0: wordLeftX + (totalRows - row - 1) * pixelSize,
+    x1: wordLeftX + (totalRows - row) * pixelSize,
+    z0: wordFrontZ + col * pixelSize,
+    z1: wordFrontZ + (col + 1) * pixelSize,
   }));
 
   return {

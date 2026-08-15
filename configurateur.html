@@ -489,10 +489,8 @@ let state = {
 const WALL_THICK = 1.2;       // épaisseur d'une paroi (latérale et de fond) — 3 périmètres à 0.4mm de buse, fin sans fragiliser une paroi basse non porteuse
 const CLEARANCE = 1.2;        // léger jeu latéral supplémentaire pour éviter de forcer
 const DEPTH_CLEARANCE = 1.0;  // jeu longitudinal minimal, le boîtier reste facile à insérer
-const BASE_THICK = 2.4;       // socle allégé, soit 12 couches à 0.20 mm
+const BASE_THICK = 2.0;       // socle plein aminci, soit 10 couches à 0.20 mm
 const WALL_HEIGHT = 12;       // hauteur des parois — réduite, juste assez pour caler le boîtier
-const BASE_RAIL_WIDTH = 3.6;  // nervure continue sous chaque séparateur
-const BASE_BAND_DEPTH = 8;    // appuis avant, central et arrière
 
 function getConsoleData(){
   return PLATFORMS[state.brand].consoles[state.console];
@@ -662,126 +660,48 @@ function triangulatePolygon(polygon){
   return tris;
 }
 
-/* =========================================================
-   SOCLE AJOURÉ
-   Trois bandes transversales soutiennent le boîtier et des
-   nervures continues renforcent chaque séparateur. Le maillage
-   est construit comme une seule grille de hauteurs : pas de
-   boîtes superposées ni de faces internes dans le STL.
-   ========================================================= */
-function uniqueSorted(values){
-  return [...new Set(values.map(v=>Number(v.toFixed(7))))].sort((a,b)=>a-b);
-}
-
-function buildSupportGrid(dims){
-  const halfWidth = dims.width/2;
-  const { frontZ, backWallFrontZ, backZ } = computeDepthLayout(dims);
-  const middleZ = (frontZ + backWallFrontZ) / 2;
-  const wallCenters = [];
-  const startWallX = -halfWidth + WALL_THICK/2;
-
-  for(let i=0; i<=state.count; i++) wallCenters.push(startWallX + i*dims.slotPitch);
-
-  const xs = [-halfWidth, halfWidth];
-  wallCenters.forEach(x=>{
-    xs.push(
-      Math.max(-halfWidth, x-BASE_RAIL_WIDTH/2),
-      x-WALL_THICK/2,
-      x+WALL_THICK/2,
-      Math.min(halfWidth, x+BASE_RAIL_WIDTH/2)
-    );
-  });
-
-  const zs = uniqueSorted([
-    frontZ,
-    frontZ + BASE_BAND_DEPTH,
-    middleZ - BASE_BAND_DEPTH/2,
-    middleZ + BASE_BAND_DEPTH/2,
-    backWallFrontZ - BASE_BAND_DEPTH,
-    backWallFrontZ,
-    backZ,
-  ]);
-  const xBreaks = uniqueSorted(xs);
-  const fullHeight = BASE_THICK + dims.wallHeight;
-  const heights = [];
-
-  for(let xi=0; xi<xBreaks.length-1; xi++){
-    heights[xi] = [];
-    const cx = (xBreaks[xi]+xBreaks[xi+1])/2;
-    const isWall = wallCenters.some(x=>Math.abs(cx-x) < WALL_THICK/2-1e-7);
-    const isRail = wallCenters.some(x=>Math.abs(cx-x) < BASE_RAIL_WIDTH/2-1e-7);
-
-    for(let zi=0; zi<zs.length-1; zi++){
-      const cz = (zs[zi]+zs[zi+1])/2;
-      const isBackWall = cz > backWallFrontZ-1e-7;
-      const isCrossBand =
-        cz < frontZ + BASE_BAND_DEPTH-1e-7 ||
-        Math.abs(cz-middleZ) < BASE_BAND_DEPTH/2-1e-7 ||
-        (cz > backWallFrontZ-BASE_BAND_DEPTH+1e-7 && cz < backWallFrontZ-1e-7);
-
-      heights[xi][zi] = (isWall || isBackWall)
-        ? fullHeight
-        : (isRail || isCrossBand ? BASE_THICK : 0);
-    }
-  }
-
-  return { xs:xBreaks, zs, heights };
-}
-
-function buildSupportQuads(dims){
-  const { xs, zs, heights } = buildSupportGrid(dims);
-  const quads = [];
-  const nx = xs.length-1, nz = zs.length-1;
-  const addVertical = (low, high, makeQuad)=>{
-    // Une face haute est coupée au niveau du socle. Les arêtes des nervures
-    // et des séparateurs coïncident alors exactement, sans jonction en T.
-    const levels = [low];
-    if(low < BASE_THICK && BASE_THICK < high) levels.push(BASE_THICK);
-    levels.push(high);
-    for(let i=0; i<levels.length-1; i++) quads.push(makeQuad(levels[i], levels[i+1]));
-  };
-
-  for(let xi=0; xi<nx; xi++){
-    for(let zi=0; zi<nz; zi++){
-      const h = heights[xi][zi];
-      if(h <= 0) continue;
-      const x0=xs[xi], x1=xs[xi+1], z0=zs[zi], z1=zs[zi+1];
-
-      // Dessus (+Y) et dessous (-Y).
-      quads.push([[x0,h,z0],[x0,h,z1],[x1,h,z1],[x1,h,z0]]);
-      quads.push([[x1,0,z0],[x1,0,z1],[x0,0,z1],[x0,0,z0]]);
-
-      const left = xi>0 ? heights[xi-1][zi] : 0;
-      if(left < h) addVertical(left,h,(low,high)=>
-        [[x0,low,z0],[x0,low,z1],[x0,high,z1],[x0,high,z0]]);
-
-      const right = xi<nx-1 ? heights[xi+1][zi] : 0;
-      if(right < h) addVertical(right,h,(low,high)=>
-        [[x1,low,z1],[x1,low,z0],[x1,high,z0],[x1,high,z1]]);
-
-      const front = zi>0 ? heights[xi][zi-1] : 0;
-      if(front < h) addVertical(front,h,(low,high)=>
-        [[x0,low,z0],[x0,high,z0],[x1,high,z0],[x1,low,z0]]);
-
-      const back = zi<nz-1 ? heights[xi][zi+1] : 0;
-      if(back < h) addVertical(back,h,(low,high)=>
-        [[x1,low,z1],[x1,high,z1],[x0,high,z1],[x0,low,z1]]);
-    }
-  }
-  return quads;
-}
-
 function buildTriangleList(dims){
   const triangles = [];
-  buildSupportQuads(dims).forEach(q=>{
-    triangles.push([q[0],q[1],q[2]], [q[0],q[2],q[3]]);
+  const profile = buildCombProfile(dims);
+  const { frontZ:z0, backWallFrontZ:z1, backZ } = computeDepthLayout(dims);
+  const frontTris = triangulatePolygon(profile.map(p=>[p[0],p[1]]));
+
+  frontTris.forEach(([a,b,c])=>{
+    triangles.push([[a[0],a[1],z0],[c[0],c[1],z0],[b[0],b[1],z0]]);
+    triangles.push([[a[0],a[1],z1],[b[0],b[1],z1],[c[0],c[1],z1]]);
   });
+
+  for(let i=0; i<profile.length; i++){
+    const p0=profile[i], p1=profile[(i+1)%profile.length];
+    const a=[p0[0],p0[1],z0], b=[p1[0],p1[1],z0];
+    const c=[p1[0],p1[1],z1], d=[p0[0],p0[1],z1];
+    triangles.push([a,b,c],[a,c,d]);
+  }
+
+  const totalHeight = BASE_THICK + dims.wallHeight;
+  addBoxTriangles(triangles, 0, totalHeight/2, (z1+backZ)/2,
+    dims.width, totalHeight, WALL_THICK);
   return triangles;
 }
 
-// L'aperçu et le STL utilisent rigoureusement la même géométrie.
 function buildQuadList(dims){
-  return buildSupportQuads(dims);
+  const quads = [];
+  const profile = buildCombProfile(dims);
+  const { frontZ:z0, backWallFrontZ:z1, backZ } = computeDepthLayout(dims);
+
+  quads.push(profile.map(p=>[p[0],p[1],z0]).reverse());
+  quads.push(profile.map(p=>[p[0],p[1],z1]));
+
+  for(let i=0; i<profile.length; i++){
+    const p0=profile[i], p1=profile[(i+1)%profile.length];
+    quads.push([[p0[0],p0[1],z0],[p1[0],p1[1],z0],
+      [p1[0],p1[1],z1],[p0[0],p0[1],z1]]);
+  }
+
+  const totalHeight = BASE_THICK + dims.wallHeight;
+  addBoxQuads(quads, 0, totalHeight/2, (z1+backZ)/2,
+    dims.width, totalHeight, WALL_THICK);
+  return quads;
 }
 
 /* =========================================================

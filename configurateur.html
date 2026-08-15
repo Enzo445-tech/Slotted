@@ -487,11 +487,12 @@ let state = {
 };
 
 const WALL_THICK = 1.2;       // épaisseur d'une paroi (latérale et de fond) — 3 périmètres à 0.4mm de buse, fin sans fragiliser une paroi basse non porteuse
-const CLEARANCE = 1.0;        // jeu latéral d'insertion, sans largeur superflue
-const DEPTH_CLEARANCE = 1.4;  // conserve strictement la profondeur actuelle
+const CLEARANCE = 1.2;        // léger jeu latéral supplémentaire pour éviter de forcer
+const DEPTH_CLEARANCE = 1.0;  // jeu longitudinal minimal, le boîtier reste facile à insérer
 const BASE_THICK = 2.4;       // socle allégé, soit 12 couches à 0.20 mm
 const WALL_HEIGHT = 12;       // hauteur des parois — réduite, juste assez pour caler le boîtier
-const FRONT_MARGIN = 6;       // petite marge devant le boîtier, pour qu'il ne dépasse pas du socle
+const BASE_RAIL_WIDTH = 3.6;  // nervure continue sous chaque séparateur
+const BASE_BAND_DEPTH = 8;    // appuis avant, central et arrière
 
 function getConsoleData(){
   return PLATFORMS[state.brand].consoles[state.console];
@@ -501,9 +502,9 @@ function computeDimensions(){
   const c = getConsoleData();
   const slotPitch = c.caseThickness + CLEARANCE + WALL_THICK;
   const width = state.count * slotPitch + WALL_THICK;
-  // Profondeur = profondeur réelle du boîtier + jeu d'insertion + épaisseur de la paroi de fond + petite marge avant.
-  // Plus de réglage manuel : la profondeur suit toujours exactement la console choisie.
-  const depth = c.caseDepth + DEPTH_CLEARANCE + WALL_THICK + FRONT_MARGIN;
+  // Le support ne dépasse le boîtier que du jeu utile et de la paroi arrière.
+  // Il reste ainsi propre même lorsque les jaquettes sont orientées dans l'autre sens.
+  const depth = c.caseDepth + DEPTH_CLEARANCE + WALL_THICK;
   return {
     slotPitch, width, depth,
     wallHeight: WALL_HEIGHT,
@@ -661,77 +662,126 @@ function triangulatePolygon(polygon){
   return tris;
 }
 
-function buildTriangleList(dims){
-  const triangles = [];
-  const profile = buildCombProfile(dims); // points 2D (x,y), dans le plan, profondeur = z
-  const { frontZ: z0, backWallFrontZ: z1, backZ } = computeDepthLayout(dims);
+/* =========================================================
+   SOCLE AJOURÉ
+   Trois bandes transversales soutiennent le boîtier et des
+   nervures continues renforcent chaque séparateur. Le maillage
+   est construit comme une seule grille de hauteurs : pas de
+   boîtes superposées ni de faces internes dans le STL.
+   ========================================================= */
+function uniqueSorted(values){
+  return [...new Set(values.map(v=>Number(v.toFixed(7))))].sort((a,b)=>a-b);
+}
 
-  // --- Faces avant et arrière : triangulation du polygone fermé (profil + fermeture en bas) ---
-  const closedProfile = [...profile]; // déjà fermé visuellement par le bas-gauche/bas-droit à y=0
-  const frontTris = triangulatePolygon(closedProfile.map(p=>[p[0], p[1]]));
-  frontTris.forEach(t=>{
-    const [a,b,c] = t;
-    // face avant (z0) : normale doit sortir vers -z
-    triangles.push([[a[0],a[1],z0], [c[0],c[1],z0], [b[0],b[1],z0]]);
-    // face arrière (z1) : normale doit sortir vers +z
-    triangles.push([[a[0],a[1],z1], [b[0],b[1],z1], [c[0],c[1],z1]]);
+function buildSupportGrid(dims){
+  const halfWidth = dims.width/2;
+  const { frontZ, backWallFrontZ, backZ } = computeDepthLayout(dims);
+  const middleZ = (frontZ + backWallFrontZ) / 2;
+  const wallCenters = [];
+  const startWallX = -halfWidth + WALL_THICK/2;
+
+  for(let i=0; i<=state.count; i++) wallCenters.push(startWallX + i*dims.slotPitch);
+
+  const xs = [-halfWidth, halfWidth];
+  wallCenters.forEach(x=>{
+    xs.push(
+      Math.max(-halfWidth, x-BASE_RAIL_WIDTH/2),
+      x-WALL_THICK/2,
+      x+WALL_THICK/2,
+      Math.min(halfWidth, x+BASE_RAIL_WIDTH/2)
+    );
   });
 
-  // --- Faces latérales : on extrude chaque segment du contour entre z0 et z1 ---
-  for(let i=0; i<closedProfile.length; i++){
-    const p0 = closedProfile[i];
-    const p1 = closedProfile[(i+1) % closedProfile.length];
-    // quad : p0-z0, p1-z0, p1-z1, p0-z1 — winding choisi pour normale sortante
-    // (le contour est parcouru dans le sens horaire vu de face en regardant -z,
-    // donc la normale "vers l'extérieur" pour un segment (p0->p1) est obtenue par
-    // ce winding précis ; validé numériquement ci-dessous dans les tests)
-    const a = [p0[0],p0[1],z0], b=[p1[0],p1[1],z0], c=[p1[0],p1[1],z1], d=[p0[0],p0[1],z1];
-    triangles.push([a,b,c]);
-    triangles.push([a,c,d]);
+  const zs = uniqueSorted([
+    frontZ,
+    frontZ + BASE_BAND_DEPTH,
+    middleZ - BASE_BAND_DEPTH/2,
+    middleZ + BASE_BAND_DEPTH/2,
+    backWallFrontZ - BASE_BAND_DEPTH,
+    backWallFrontZ,
+    backZ,
+  ]);
+  const xBreaks = uniqueSorted(xs);
+  const fullHeight = BASE_THICK + dims.wallHeight;
+  const heights = [];
+
+  for(let xi=0; xi<xBreaks.length-1; xi++){
+    heights[xi] = [];
+    const cx = (xBreaks[xi]+xBreaks[xi+1])/2;
+    const isWall = wallCenters.some(x=>Math.abs(cx-x) < WALL_THICK/2-1e-7);
+    const isRail = wallCenters.some(x=>Math.abs(cx-x) < BASE_RAIL_WIDTH/2-1e-7);
+
+    for(let zi=0; zi<zs.length-1; zi++){
+      const cz = (zs[zi]+zs[zi+1])/2;
+      const isBackWall = cz > backWallFrontZ-1e-7;
+      const isCrossBand =
+        cz < frontZ + BASE_BAND_DEPTH-1e-7 ||
+        Math.abs(cz-middleZ) < BASE_BAND_DEPTH/2-1e-7 ||
+        (cz > backWallFrontZ-BASE_BAND_DEPTH+1e-7 && cz < backWallFrontZ-1e-7);
+
+      heights[xi][zi] = (isWall || isBackWall)
+        ? fullHeight
+        : (isRail || isCrossBand ? BASE_THICK : 0);
+    }
   }
 
-  // --- Paroi de fond : dernière tranche du socle, sans dépassement ---
-  const backZ0 = z1;
-  const backZ1 = backZ;
-  const totalHeight = BASE_THICK + dims.wallHeight;
-  addBoxTriangles(triangles,
-    0, totalHeight/2, (backZ0+backZ1)/2,
-    dims.width, totalHeight, WALL_THICK
-  );
+  return { xs:xBreaks, zs, heights };
+}
 
+function buildSupportQuads(dims){
+  const { xs, zs, heights } = buildSupportGrid(dims);
+  const quads = [];
+  const nx = xs.length-1, nz = zs.length-1;
+  const addVertical = (low, high, makeQuad)=>{
+    // Une face haute est coupée au niveau du socle. Les arêtes des nervures
+    // et des séparateurs coïncident alors exactement, sans jonction en T.
+    const levels = [low];
+    if(low < BASE_THICK && BASE_THICK < high) levels.push(BASE_THICK);
+    levels.push(high);
+    for(let i=0; i<levels.length-1; i++) quads.push(makeQuad(levels[i], levels[i+1]));
+  };
+
+  for(let xi=0; xi<nx; xi++){
+    for(let zi=0; zi<nz; zi++){
+      const h = heights[xi][zi];
+      if(h <= 0) continue;
+      const x0=xs[xi], x1=xs[xi+1], z0=zs[zi], z1=zs[zi+1];
+
+      // Dessus (+Y) et dessous (-Y).
+      quads.push([[x0,h,z0],[x0,h,z1],[x1,h,z1],[x1,h,z0]]);
+      quads.push([[x1,0,z0],[x1,0,z1],[x0,0,z1],[x0,0,z0]]);
+
+      const left = xi>0 ? heights[xi-1][zi] : 0;
+      if(left < h) addVertical(left,h,(low,high)=>
+        [[x0,low,z0],[x0,low,z1],[x0,high,z1],[x0,high,z0]]);
+
+      const right = xi<nx-1 ? heights[xi+1][zi] : 0;
+      if(right < h) addVertical(right,h,(low,high)=>
+        [[x1,low,z1],[x1,low,z0],[x1,high,z0],[x1,high,z1]]);
+
+      const front = zi>0 ? heights[xi][zi-1] : 0;
+      if(front < h) addVertical(front,h,(low,high)=>
+        [[x0,low,z0],[x0,high,z0],[x1,high,z0],[x1,low,z0]]);
+
+      const back = zi<nz-1 ? heights[xi][zi+1] : 0;
+      if(back < h) addVertical(back,h,(low,high)=>
+        [[x1,low,z1],[x1,high,z1],[x0,high,z1],[x0,low,z1]]);
+    }
+  }
+  return quads;
+}
+
+function buildTriangleList(dims){
+  const triangles = [];
+  buildSupportQuads(dims).forEach(q=>{
+    triangles.push([q[0],q[1],q[2]], [q[0],q[2],q[3]]);
+  });
   return triangles;
 }
 
-// Même géométrie que buildTriangleList, mais en quads/faces complètes pour le rendu visuel,
-// pour éviter toute diagonale de tessellation visible sur les grandes faces planes.
+// L'aperçu et le STL utilisent rigoureusement la même géométrie.
 function buildQuadList(dims){
-  const quads = [];
-  const profile = buildCombProfile(dims);
-  const { frontZ: z0, backWallFrontZ: z1, backZ } = computeDepthLayout(dims);
-
-  // Face avant et arrière comme un seul polygone chacune (pas de découpe en quads,
-  // le renderer gère déjà les polygones à N côtés comme une seule face).
-  quads.push(profile.map(p=>[p[0], p[1], z0]).reverse());
-  quads.push(profile.map(p=>[p[0], p[1], z1]));
-
-  // Faces latérales : un quad par segment du contour
-  for(let i=0; i<profile.length; i++){
-    const p0 = profile[i];
-    const p1 = profile[(i+1) % profile.length];
-    quads.push([
-      [p0[0],p0[1],z0], [p1[0],p1[1],z0], [p1[0],p1[1],z1], [p0[0],p0[1],z1]
-    ]);
-  }
-
-  const backZ0 = z1;
-  const backZ1 = backZ;
-  const totalHeight = BASE_THICK + dims.wallHeight;
-  addBoxQuads(quads,
-    0, totalHeight/2, (backZ0+backZ1)/2,
-    dims.width, totalHeight, WALL_THICK
-  );
-
-  return quads;
+  return buildSupportQuads(dims);
 }
 
 /* =========================================================

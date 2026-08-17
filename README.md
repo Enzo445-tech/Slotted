@@ -1,74 +1,86 @@
 # Slotted
 
-> **Le support de jeux qui s'adapte à ta console, pas l'inverse.**
+> Le support de jeux qui s'adapte à ta collection.
 
-Slotted est un générateur de supports de rangement pour jeux vidéo imprimables en 3D. Choisis ta console, le nombre de jeux à ranger, puis télécharge un fichier prêt à trancher — sans cote à reprendre, sans modèle générique qui ne correspond jamais tout à fait à ton boîtier.
+Slotted est un configurateur gratuit qui crée un support de rangement adapté à ta console et au nombre de jeux que tu possèdes. Choisis un format, indique le nombre d'emplacements et télécharge un fichier STL prêt à imprimer.
 
-**Pas de compte. Pas d'installation. Pas de backend.** Tout tourne directement dans le navigateur.
+**Gratuit · Sans compte · Sans installation · Sans supports d'impression**
 
----
+[Créer mon support](https://enzo445-tech.github.io/Slotted/configurateur.html) · [Découvrir le site](https://enzo445-tech.github.io/Slotted/) · [Rejoindre le Discord](https://discord.gg/hqb5MYpvVc)
 
-# 📖 Le principe
+> [!NOTE]
+> Slotted est actuellement en bêta publique. Les principaux formats sont testés progressivement et les tolérances peuvent légèrement varier selon l'imprimante, le filament et les réglages utilisés.
 
-Un support de rangement classique pour jeux vidéo se résume à peu de choses : un socle plat, des séparateurs et une paroi de fond pour empêcher les boîtiers de glisser.
+## Comment ça marche ?
 
-Le problème, c'est que chaque console possède son propre format de boîtier. Un jeu PS5 et un jeu Switch n'ont ni la même largeur, ni la même épaisseur. Un modèle figé pour l'un ne conviendra donc jamais parfaitement à l'autre.
+1. **Choisis ta console** parmi les formats disponibles.
+2. **Indique le nombre de jeux** à ranger, de 2 à 16.
+3. **Vérifie le support dans l'aperçu 3D** interactif.
+4. **Télécharge le STL** et ouvre-le dans ton logiciel de tranchage habituel.
 
-Slotted règle ce problème en générant le modèle à la demande à partir de mesures réelles.
+La largeur, la profondeur et l'espacement sont calculés automatiquement à partir du format sélectionné. Aucune mesure ni modélisation 3D n'est nécessaire.
 
-1. **Choisis ta plateforme et ta console** — PlayStation, Nintendo, Xbox ou Sega, du PS1 à la PS5, de la DS à la Switch 2.
-2. **Indique le nombre de jeux** à ranger.
-3. **Télécharge le fichier `.STL`**, déjà dimensionné à l'épaisseur exacte de ton boîtier et prêt à être ouvert dans ton slicer habituel.
+## Pourquoi Slotted ?
 
-La largeur du support, sa profondeur et l'espacement entre chaque jeu sont recalculés automatiquement. Aucune mesure n'est à reprendre manuellement.
+- **Rapide à imprimer** : un support PS4 de 6 jeux a été imprimé en 54 min 14 s sur une Bambu Lab A1.
+- **Économique** : la forme utilise peu de matière et ne nécessite aucun support d'impression.
+- **Stable** : le socle plein maintient les boîtiers correctement sur une étagère.
+- **Compact** : le support dépasse le moins possible tout en permettant de placer les jeux dans les deux sens.
+- **Simple** : tout fonctionne directement dans le navigateur, sans compte et sans logiciel supplémentaire.
 
----
+## Formats compatibles
 
-# 🎮 Consoles prises en charge
+| Famille | Formats |
+| --- | --- |
+| **PlayStation** | PS1 · PS2 · PS3 · PS4 · PS5 · PSP · PS Vita |
+| **Nintendo** | Switch · Switch 2 · Wii / Wii U · 3DS · DS · GameCube |
+| **Xbox** | Première génération · Xbox 360 · Xbox One · Xbox Series |
+| **Sega** | Saturn · Dreamcast |
 
-| Plateforme      | Modèles                                               |
-| --------------- | ----------------------------------------------------- |
-| **PlayStation** | PS1 · PS2 · PS3 · PS4 · PS5 · PSP · PS Vita           |
-| **Nintendo**    | Switch · Switch 2 · Wii · Wii U · GameCube · DS · 3DS |
-| **Xbox**        | Xbox · Xbox 360 · Xbox One · Xbox Series              |
-| **Sega**        | Saturn · Dreamcast                                    |
+Chaque format utilise ses propres dimensions de boîtier. Le configurateur ajuste automatiquement le support au modèle choisi.
 
-Chaque modèle utilise les dimensions réelles de son boîtier. Aucune valeur générique n'est réutilisée d'une console à l'autre.
+## Exemple réel
 
----
+Configuration utilisée comme référence pour mesurer le temps d'impression :
 
-# 🖨️ Pensé pour être imprimé
+| Paramètre | Valeur |
+| --- | --- |
+| Support | PS4 · 6 jeux |
+| Dimensions | 113,4 × 137,2 mm |
+| Temps d'impression | 54 min 14 s |
+| Imprimante | Bambu Lab A1 |
+| Matériau | PLA Generic |
+| Remplissage | 15 % |
+| Supports | Aucun |
 
-Le modèle généré est volontairement simple : un socle plat avec des séparateurs bas, sans surplomb ni zone nécessitant des supports d'impression.
+Le temps réel dépend de l'imprimante, du profil de tranchage, du filament et du nombre d'emplacements.
 
-Les épaisseurs ont été optimisées pour conserver une bonne solidité tout en réduisant le temps d'impression et la quantité de matière utilisée. Sur un support typique, on passe d'environ **2 h 30** à **1 h 15 – 1 h 30***.
+## Aperçu 3D maison
 
-La profondeur du support est également calculée automatiquement à partir des dimensions réelles du boîtier sélectionné.
+Slotted possède son propre moteur graphique léger. Il reconstruit le support en temps réel dans le navigateur à chaque changement de console ou de capacité.
 
----
+L'aperçu n'utilise ni WebGL, ni Three.js, ni moteur 3D externe : les points du modèle sont projetés sur un canvas 2D, ce qui permet au configurateur de rester rapide et autonome.
 
-# 🖥️ Comment fonctionne l'aperçu 3D
+L'affichage en fil de fer peut parfois produire de petits croisements visuels pendant la rotation. Cela n'affecte pas le fichier STL exporté.
 
-Le configurateur affiche un aperçu qui se reconstruit en temps réel à chaque modification.
+## Utilisation locale
 
-Il n'utilise **ni WebGL**, **ni Three.js**, ni aucun moteur 3D externe. Chaque point du modèle est projeté manuellement sur une image 2D puis recalculé à chaque image.
+Le projet est constitué de deux pages HTML autonomes et ne demande aucune étape de compilation :
 
-Ce choix permet de conserver un projet léger, sans dépendances, tout en affichant un aperçu fidèle au modèle réellement exporté.
+- `index.html` : page de présentation ;
+- `configurateur.html` : configurateur et générateur STL.
 
-Il peut arriver que certaines arêtes semblent se croiser ou qu'une face clignote brièvement pendant la rotation. Il s'agit uniquement d'un artefact du rendu en fil de fer : le fichier `.STL` généré reste parfaitement correct.
+Pour l'essayer localement, télécharge le dépôt puis ouvre `index.html` dans un navigateur récent.
 
----
+## Retours et contributions
 
-# 🚀 Utilisation
+Un boîtier semble trop serré, trop large ou mal dimensionné ? Ouvre une [issue GitHub](https://github.com/Enzo445-tech/Slotted/issues) ou partage ton retour sur [Discord](https://discord.gg/hqb5MYpvVc) en précisant la console, l'imprimante, le filament et le profil utilisés.
 
-Le projet est constitué de deux pages HTML autonomes, sans dépendance et sans étape de build.
+## Licence
 
-* `index.html` — page de présentation
-* `configurateur.html` — générateur de supports
+Slotted est distribué sous licence [Creative Commons Attribution–NonCommercial 4.0 International](LICENSE.md).
 
----
-
-* L'estimation de **1 h 15 à 1 h 30** est basée sur le modèle **PS5 (6 emplacements)** imprimé sur une **Bambu Lab A1** avec des paramètres standards. Le temps d'impression peut varier selon la console, le nombre d'emplacements, l'imprimante et les réglages utilisés.
+L'utilisation personnelle, la modification et le partage avec attribution sont autorisés. La vente des fichiers ou des pièces imprimées n'est pas autorisée.
 
 ---
 
@@ -76,6 +88,6 @@ Le projet est constitué de deux pages HTML autonomes, sans dépendance et sans 
 
 **Fait pour être imprimé.**
 
-**Enzo445 × NEXA**
+Enzo445 × NEXA
 
 </div>

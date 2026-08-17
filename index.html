@@ -3,693 +3,79 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Slotted — Générateur de supports de jeux 3D</title>
+<meta name="description" content="Slotted génère gratuitement un support de jeux vidéo 3D adapté à ta console et au nombre de boîtiers à ranger.">
+<meta name="theme-color" content="#090909">
+<title>Slotted — Ton support de jeux, prêt à imprimer</title>
 <style>
-  :root{
-    --bg:#0a0a0a;
-    --panel-2:#161616;
-    --line:#262626;
-    --text:#f5f5f3;
-    --text-dim:#7a7a78;
-    --white:#f5f5f3;
-    --mono: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  html{scroll-behavior:smooth;}
-  html,body{
-    background:var(--bg);
-    color:var(--text);
-    font-family:-apple-system, 'Inter', Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing:antialiased;
-    min-height:100%;
-  }
-  @media (prefers-reduced-motion: reduce){
-    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
-  }
-
-  header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:20px 32px;
-    border-bottom:1px solid var(--line);
-    position:sticky;
-    top:0;
-    background:rgba(10,10,10,0.88);
-    backdrop-filter:blur(8px);
-    z-index:10;
-  }
-  .logo{
-    font-weight:700;
-    font-size:17px;
-    letter-spacing:-0.01em;
-    display:flex;
-    align-items:center;
-    gap:9px;
-  }
-  .logo-mark{
-    width:20px;
-    height:20px;
-    object-fit:contain;
-    flex:none;
-  }
-  header nav{
-    font-family:var(--mono);
-    font-size:10.5px;
-    color:var(--text-dim);
-    letter-spacing:0.04em;
-  }
-
-  /* ---------- Hero ---------- */
-  main{
-    max-width:1080px;
-    margin:0 auto;
-    padding:64px 32px 0;
-  }
-  .eyebrow{
-    font-family:var(--mono);
-    font-size:11px;
-    color:var(--text-dim);
-    letter-spacing:0.1em;
-    text-transform:uppercase;
-    margin-bottom:18px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-  }
-  .eyebrow .dot{
-    width:6px;height:6px;
-    border-radius:50%;
-    background:var(--white);
-    flex:none;
-  }
-  h1{
-    font-size:clamp(34px, 6vw, 56px);
-    font-weight:800;
-    letter-spacing:-0.025em;
-    line-height:1.05;
-    margin-bottom:22px;
-    max-width:680px;
-  }
-  .lede{
-    color:var(--text-dim);
-    font-size:16px;
-    line-height:1.6;
-    max-width:480px;
-    margin-bottom:38px;
-  }
-
-  .cta-row{
-    display:flex;
-    align-items:center;
-    gap:18px;
-    margin-bottom:64px;
-    flex-wrap:wrap;
-  }
-  .cta-btn{
-    background:var(--white);
-    color:var(--bg);
-    border:none;
-    font-weight:700;
-    font-size:15px;
-    padding:16px 28px;
-    cursor:pointer;
-    font-family:inherit;
-    transition:opacity .15s, transform .1s;
-    text-decoration:none;
-    display:inline-flex;
-    align-items:center;
-    gap:10px;
-  }
-  .cta-btn:hover{opacity:0.85;}
-  .cta-btn:active{transform:scale(0.98);}
-  .cta-btn:focus-visible{outline:2px solid var(--white); outline-offset:3px;}
-  .cta-btn .arrow{
-    font-size:16px;
-    transition:transform .15s;
-  }
-  .cta-btn:hover .arrow{transform:translateX(3px);}
-
-  .cta-sub{
-    font-family:var(--mono);
-    font-size:11.5px;
-    color:var(--text-dim);
-    letter-spacing:0.02em;
-  }
-
-  .warning{
-    display:flex;
-    align-items:flex-start;
-    gap:12px;
-    max-width:560px;
-    margin-bottom:38px;
-    padding:14px 18px;
-    background:rgba(247,181,123,0.07);
-    border:1px solid rgba(247,181,123,0.3);
-    border-radius:8px;
-    font-size:13px;
-    line-height:1.6;
-    color:#e0bb98;
-  }
-  .warning strong{
-    color:#f7b57b;
-  }
-  .warning-icon{
-    color:#f7b57b;
-    flex:none;
-    margin-top:2px;
-  }
-
-  /* ---------- Photo showcase ---------- */
-  .showcase{
-    border:1px solid var(--line);
-    background:var(--panel-2);
-    width:100%;
-    max-width:550px;
-    aspect-ratio: 4/3;
-    overflow:hidden;
-    position:relative;
-    margin-bottom:96px;
-    margin-left: auto;
-    margin-right: auto;
-    border-radius: 12px; 
-  }
-  .showcase img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    display:block;
-  }
-  .showcase .placeholder{
-    position:absolute;
-    inset:0;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-    color:var(--text-dim);
-    font-family:var(--mono);
-    font-size:12px;
-    letter-spacing:0.03em;
-    text-align:center;
-    padding:20px;
-  }
-  .showcase .placeholder .icon{
-    width:38px;height:38px;
-    border:1.5px solid var(--text-dim);
-    border-radius:6px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:16px;
-    margin-bottom:6px;
-  }
-  .showcase .placeholder code{
-    color:var(--white);
-    font-weight:600;
-  }
-
-  /* ---------- Section générique ---------- */
-  section{
-    margin-bottom:96px;
-    opacity:0;
-    transform:translateY(24px);
-    transition:opacity .6s cubic-bezier(.16,.8,.3,1), transform .6s cubic-bezier(.16,.8,.3,1);
-  }
-  section.in-view{
-    opacity:1;
-    transform:translateY(0);
-  }
-  .section-head{
-    margin-bottom:36px;
-  }
-  .section-head .eyebrow{margin-bottom:14px;}
-  .section-head h2{
-    font-size:clamp(24px, 3.4vw, 32px);
-    font-weight:800;
-    letter-spacing:-0.02em;
-    max-width:560px;
-  }
-
-  /* ---------- Processus (étapes réelles, pas décoratives) ---------- */
-  .steps{
-    display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    border:1px solid var(--line);
-  }
-  @media (max-width:760px){
-    .steps{grid-template-columns:1fr;}
-  }
-  .step{
-    padding:30px 26px;
-    position:relative;
-    border-right:1px solid var(--line);
-  }
-  .step:last-child{border-right:none;}
-  @media (max-width:760px){
-    .step{border-right:none; border-bottom:1px solid var(--line);}
-    .step:last-child{border-bottom:none;}
-  }
-  .step .step-index{
-    font-family:var(--mono);
-    font-size:11px;
-    color:var(--text-dim);
-    letter-spacing:0.05em;
-    margin-bottom:18px;
-  }
-  .step h3{
-    font-size:16px;
-    font-weight:700;
-    margin-bottom:9px;
-    letter-spacing:-0.01em;
-  }
-  .step p{
-    color:var(--text-dim);
-    font-size:13.5px;
-    line-height:1.6;
-  }
-  .step-arrow{
-    position:absolute;
-    top:30px; right:-1px;
-    color:var(--text-dim);
-    font-family:var(--mono);
-    font-size:14px;
-    z-index:1;
-  }
-  @media (max-width:760px){ .step-arrow{display:none;} }
-
-  /* ---------- Plateformes ---------- */
-  .platform-grid{
-    display:grid;
-    grid-template-columns:repeat(4, 1fr);
-    gap:1px;
-    background:var(--line);
-    border:1px solid var(--line);
-  }
-  @media (max-width:760px){
-    .platform-grid{grid-template-columns:repeat(2, 1fr);}
-  }
-  @media (max-width:460px){
-    .platform-grid{grid-template-columns:1fr;}
-  }
-  .platform-card{
-    background:var(--bg);
-    padding:26px 24px;
-  }
-  .platform-card .platform-name{
-    font-weight:700;
-    font-size:16px;
-    margin-bottom:12px;
-    letter-spacing:-0.01em;
-  }
-  .platform-card .platform-models{
-    font-family:var(--mono);
-    font-size:11.5px;
-    color:var(--text-dim);
-    line-height:1.9;
-  }
-
-  /* ---------- Specimen technique (signature element) ---------- */
-  .specimen{
-    border:1px solid var(--line);
-    padding:0;
-    display:grid;
-    grid-template-columns: 1fr 280px;
-  }
-  @media (max-width:760px){
-    .specimen{grid-template-columns:1fr;}
-  }
-  .specimen-visual{
-    padding:40px 32px;
-    border-right:1px solid var(--line);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-height:220px;
-  }
-  @media (max-width:760px){
-    .specimen-visual{border-right:none; border-bottom:1px solid var(--line);}
-  }
-  .specimen-data{
-    padding:28px 26px;
-    font-family:var(--mono);
-    font-size:12px;
-    color:var(--text-dim);
-    line-height:2.1;
-  }
-  .specimen-data .row{display:flex; justify-content:space-between; gap:12px;}
-  .specimen-data .row span:last-child{color:var(--text); font-weight:600;}
-  .specimen-data .specimen-label{
-    color:var(--white);
-    font-weight:700;
-    margin-bottom:14px;
-    font-family:-apple-system, 'Inter', Helvetica, Arial, sans-serif;
-    font-size:13px;
-  }
-
-  /* ---------- FAQ ---------- */
-  .faq{
-    border:1px solid var(--line);
-  }
-  .faq-item{
-    border-bottom:1px solid var(--line);
-  }
-  .faq-item:last-child{border-bottom:none;}
-  .faq-item summary{
-    padding:20px 24px;
-    cursor:pointer;
-    font-weight:700;
-    font-size:14.5px;
-    list-style:none;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:16px;
-  }
-  .faq-item summary::-webkit-details-marker{display:none;}
-  .faq-item summary .plus{
-    font-family:var(--mono);
-    color:var(--text-dim);
-    font-size:16px;
-    flex:none;
-    transition:transform .15s;
-  }
-  .faq-item[open] summary .plus{transform:rotate(45deg);}
-  .faq-item .faq-body{
-    padding:0 24px 20px;
-    color:var(--text-dim);
-    font-size:13.5px;
-    line-height:1.6;
-    max-width:600px;
-  }
-
-  .footnote{
-    font-family:var(--mono);
-    font-size:11px;
-    color:#5e5e5c;
-    line-height:1.6;
-    max-width:680px;
-    padding-bottom:48px;
-  }
-
-  footer{
-    border-top:1px solid var(--line);
-    padding:24px 32px;
-    max-width:1080px;
-    margin:0 auto;
-    display:flex;
-    flex-direction:column;
-    gap:18px;
-  }
-  .footer-row{
-    display:flex;
-    justify-content:space-between;
-    font-family:var(--mono);
-    font-size:10.5px;
-    color:var(--text-dim);
-    letter-spacing:0.03em;
-    flex-wrap:wrap;
-    gap:8px;
-  }
-  .footer-links{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-  }
-  .footer-link{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    padding:9px 14px;
-    border:1px solid var(--line);
-    border-radius:6px;
-    color:var(--text-dim);
-    text-decoration:none;
-    font-size:12.5px;
-    font-weight:600;
-    transition:color .15s, border-color .15s;
-  }
-  .footer-link:hover{
-    color:var(--white);
-    border-color:#3a3a38;
-  }
+  :root{--bg:#090909;--panel:#11110f;--panel-2:#171714;--line:#2a2a25;--line-strong:#3a3a32;--text:#f5f5ef;--muted:#929289;--accent:#dfff72;--accent-soft:rgba(223,255,114,.11);--mono:'SF Mono','JetBrains Mono',Consolas,monospace}
+  *{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+  body{min-height:100%;background:radial-gradient(circle at 82% 8%,rgba(223,255,114,.06),transparent 24rem),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:inherit}img{max-width:100%}::selection{background:var(--accent);color:#0a0a08}
+  .container{width:min(1160px,calc(100% - 48px));margin-inline:auto}.mono{font-family:var(--mono)}
+  header{position:sticky;top:0;z-index:20;border-bottom:1px solid rgba(42,42,37,.8);background:rgba(9,9,9,.82);backdrop-filter:blur(16px)}
+  .header-inner{min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:28px}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;letter-spacing:-.02em}.brand img{width:22px;height:22px;object-fit:contain}
+  nav{display:flex;align-items:center;gap:26px}nav a{font-size:12px;color:var(--muted);text-decoration:none;transition:color .15s}nav a:hover{color:var(--text)}
+  .nav-cta{padding:10px 15px;border:1px solid var(--line-strong);border-radius:6px;color:var(--text)!important}
+  .hero{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(330px,.92fr);gap:70px;align-items:center;padding-block:72px 82px}
+  .kicker{display:flex;align-items:center;margin-bottom:18px;color:var(--accent);font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+  .beta-chip{display:inline-flex;align-items:center;padding:7px 10px;margin-bottom:20px;border:1px solid #49493e;border-radius:5px;color:#c7c7bb;background:#151512;font:10px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase}
+  h1{max-width:720px;font-size:clamp(44px,6.3vw,76px);line-height:.98;letter-spacing:-.055em;font-weight:850;margin-bottom:28px}h1 span{color:var(--muted)}
+  .hero-copy{max-width:620px;color:var(--muted);font-size:17px;line-height:1.7;margin-bottom:34px}
+  .actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .button{min-height:50px;padding:0 22px;border:1px solid var(--line-strong);border-radius:7px;display:inline-flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;font-size:14px;font-weight:750;transition:transform .15s,background .15s,border-color .15s}
+  .button:hover{transform:translateY(-2px);border-color:#5a5a4d}.button.primary{background:var(--accent);border-color:var(--accent);color:#0b0b08}.button.primary:hover{background:#e8ff98}
+  .hero-note{margin-top:19px;color:#66665e;font:11px/1.5 var(--mono)}
+  .product-shot{position:relative;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel);box-shadow:0 35px 80px rgba(0,0,0,.42)}
+  .product-shot img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}.shot-top,.shot-bottom{position:absolute;left:16px;right:16px;display:flex;justify-content:space-between;gap:10px}.shot-top{top:16px}.shot-bottom{bottom:16px;align-items:flex-end}
+  .pill{display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border-radius:999px;background:rgba(9,9,9,.76);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px);font:10px/1 var(--mono);letter-spacing:.05em;text-transform:uppercase}
+  .shot-caption{max-width:210px;padding:12px 14px;border-radius:8px;background:rgba(9,9,9,.78);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px)}
+  .shot-caption strong{display:block;font-size:13px;margin-bottom:4px}.shot-caption span{font:10px/1.4 var(--mono);color:#b8b8ae}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);border-block:1px solid var(--line)}.metric{padding:27px 24px;border-right:1px solid var(--line)}.metric:last-child{border-right:0}
+  .metric strong{display:block;font-size:24px;letter-spacing:-.04em;margin-bottom:6px}.metric span{color:var(--muted);font:10px/1.5 var(--mono);letter-spacing:.05em;text-transform:uppercase}
+  section{padding-block:104px;border-bottom:1px solid var(--line)}.section-head{display:grid;grid-template-columns:180px minmax(0,650px);gap:32px;margin-bottom:48px}
+  .section-label{color:var(--accent);font:11px/1.5 var(--mono);letter-spacing:.09em;text-transform:uppercase}h2{font-size:clamp(29px,4vw,46px);line-height:1.08;letter-spacing:-.035em}
+  .section-intro{margin-top:16px;color:var(--muted);font-size:15px;line-height:1.7;max-width:620px}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.step,.feature{min-height:240px;padding:27px;border:1px solid var(--line);border-radius:10px;background:var(--panel);transition:transform .2s,border-color .2s,background .2s}
+  .step:hover,.feature:hover{transform:translateY(-3px);border-color:var(--line-strong);background:var(--panel-2)}.step-index{color:var(--accent);font:11px/1 var(--mono);margin-bottom:54px}
+  .step h3,.feature h3{font-size:18px;letter-spacing:-.015em;margin-bottom:11px}.step p,.feature p{color:var(--muted);font-size:13.5px;line-height:1.7}
+  .features{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.feature{min-height:210px}.feature-icon{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line-strong);border-radius:7px;color:var(--accent);font:12px var(--mono);margin-bottom:38px}
+  .platforms{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}.platform{padding:28px 24px;background:var(--bg)}.platform h3{font-size:17px;margin-bottom:15px}.platform p{color:var(--muted);font:11px/1.9 var(--mono)}
+  .technical{display:grid;grid-template-columns:minmax(0,1fr) 340px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+  .technical-visual{min-height:350px;display:grid;place-items:center;padding:40px;border-right:1px solid var(--line)}.technical-visual svg{width:min(100%,430px);height:auto}.technical-data{padding:32px}.technical-data h3{font-size:16px;margin-bottom:25px}
+  .data-row{display:flex;justify-content:space-between;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);font:11px/1.3 var(--mono);color:var(--muted)}.data-row strong{color:var(--text);font-weight:650}.data-note{margin-top:22px;color:var(--muted);font-size:12px;line-height:1.65}
+  .status{display:grid;grid-template-columns:auto 1fr;gap:18px;padding:22px;border:1px solid rgba(223,255,114,.24);border-radius:10px;background:var(--accent-soft);margin-top:16px}
+  .status-mark{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#090909;font-weight:900}.status strong{display:block;margin-bottom:5px;font-size:14px}.status p{color:#b9b9ac;font-size:12.5px;line-height:1.6}
+  .faq{border-top:1px solid var(--line)}details{border-bottom:1px solid var(--line)}summary{list-style:none;cursor:pointer;padding:23px 2px;display:flex;align-items:center;justify-content:space-between;gap:20px;font-size:15px;font-weight:700}
+  summary::-webkit-details-marker{display:none}summary::after{content:'+';color:var(--muted);font:18px var(--mono);transition:transform .15s}details[open] summary::after{transform:rotate(45deg)}details p{max-width:700px;padding:0 2px 23px;color:var(--muted);font-size:13.5px;line-height:1.7}
+  .engine{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+  .engine-visual{min-height:330px;display:grid;place-items:center;padding:38px;border-right:1px solid var(--line);background:radial-gradient(circle at center,rgba(223,255,114,.045),transparent 60%)}
+  .engine-visual svg{width:min(100%,360px);height:auto}.engine-copy{padding:42px;display:flex;flex-direction:column;justify-content:center}.engine-copy h3{font-size:26px;letter-spacing:-.025em;margin-bottom:16px}.engine-copy p{color:var(--muted);font-size:14px;line-height:1.75}.engine-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:28px}.engine-list span{padding:11px 8px;border:1px solid var(--line);border-radius:6px;text-align:center;color:#b8b8ad;font:9px/1.3 var(--mono);text-transform:uppercase}
+  footer{border-top:1px solid var(--line);padding-block:34px}.footer-inner{display:flex;align-items:center;justify-content:space-between;gap:24px;color:#6f6f67;font:10px/1.5 var(--mono)}.footer-links{display:flex;gap:10px;flex-wrap:wrap}
+  .social-button{min-height:42px;padding:0 15px;display:inline-flex;align-items:center;gap:9px;border:1px solid var(--line-strong);border-radius:7px;background:var(--panel);color:#bcbcb1;text-decoration:none;font:650 11px/1 var(--mono);transition:color .15s,border-color .15s,transform .15s}.social-button:hover{color:var(--text);border-color:#5a5a4d;transform:translateY(-2px)}.social-button svg{width:16px;height:16px;flex:none}
+  .reveal{opacity:1;transform:none}
+  @media(max-width:900px){.hero{grid-template-columns:1fr;gap:44px;padding-top:54px}.product-shot{max-width:560px}.metrics{grid-template-columns:repeat(2,1fr)}.metric:nth-child(2){border-right:0}.metric:nth-child(-n+2){border-bottom:1px solid var(--line)}.section-head{grid-template-columns:1fr;gap:12px}.steps{grid-template-columns:1fr}.step{min-height:0}.step-index{margin-bottom:32px}.platforms{grid-template-columns:repeat(2,1fr)}.technical{grid-template-columns:1fr}.technical-visual{border-right:0;border-bottom:1px solid var(--line)}.engine{grid-template-columns:1fr}.engine-visual{border-right:0;border-bottom:1px solid var(--line)}}
+  @media(max-width:650px){.container{width:min(100% - 30px,1160px)}header nav a:not(.nav-cta){display:none}.header-inner{min-height:62px}.hero{padding-block:44px 58px}h1{font-size:43px}.hero-copy{font-size:15px}.product-shot img{aspect-ratio:4/5}.shot-caption{display:none}.metrics{margin-inline:-15px}.metric{padding:22px 16px}section{padding-block:74px}.features,.platforms{grid-template-columns:1fr}.section-head{margin-bottom:34px}.technical-visual{min-height:260px;padding:24px}.technical-data{padding:25px 20px}.engine-visual{min-height:260px;padding:24px}.engine-copy{padding:28px 22px}.engine-list{grid-template-columns:1fr}.footer-inner{align-items:flex-start;flex-direction:column}.footer-links{width:100%}.social-button{flex:1;justify-content:center}}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.button,.step,.feature{transition:none}}
 </style>
 </head>
 <body>
-
-<header>
-  <div class="logo"><img src="logo.png" alt="Slotted" class="logo-mark"><!-- Dépose ton fichier logo.png dans le même dossier que cette page -->Slotted</div>
-  <nav>GÉNÉRATEUR DE SUPPORT DE JEUX</nav>
-</header>
-
-<main>
-  <div class="eyebrow"><span class="dot"></span>Outil de fabrication 3D</div>
-
-  <h1>Le support de jeux qui s'adapte à ta console, pas l'inverse.</h1>
-
-  <p class="lede">
-    Choisis ta plateforme, ton nombre de jeux, et télécharge un fichier .STL prêt à trancher — sans cote à modifier, sans modèle figé qui ne correspond jamais tout à fait.
-  </p>
-
-  <div class="warning">
-    <svg class="warning-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <path d="M9 1.7L17 16H1L9 1.7Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-      <path d="M9 6.8V10.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-      <circle cx="9" cy="12.6" r="0.9" fill="currentColor"/>
-    </svg>
-    <div>
-      <strong>Slotted est en bêta.</strong> Les tests d'impression n'ont pas encore été réalisés sur l'ensemble des plateformes prises en charge — il est possible qu'un support nécessite un ajustement avant impression. Nous travaillons activement à l'amélioration de l'outil et à l'ajout de nouvelles fonctionnalités.
-    </div>
+<header><div class="container header-inner"><a class="brand" href="#top"><img src="logo.png" alt=""><span>Slotted</span></a><nav aria-label="Navigation principale"><a href="#fonctionnement">Fonctionnement</a><a href="#compatibilite">Compatibilité</a><a href="#faq">FAQ</a><a class="nav-cta" href="configurateur.html">Ouvrir le configurateur</a></nav></div></header>
+<main id="top">
+  <div class="container hero">
+    <div><div class="beta-chip">Bêta publique</div><div class="kicker">Générateur de support 3D</div><h1>Range tes jeux.<br><span>Imprime juste ce qu’il faut.</span></h1><p class="hero-copy">Slotted crée un support adapté à ta console et au nombre de jeux que tu possèdes. Choisis ton modèle, visualise le résultat et récupère un fichier prêt à imprimer.</p><div class="actions"><a class="button primary" href="configurateur.html">Créer mon support <span aria-hidden="true">→</span></a><a class="button" href="#fonctionnement">Découvrir le projet</a></div><p class="hero-note">GRATUIT · SANS COMPTE · SIMPLE À IMPRIMER</p></div>
+    <figure class="product-shot"><img src="img1.png" alt="Support Slotted blanc pour six jeux PlayStation 5"><div class="shot-top"><span class="pill">PS5 · 6 jeux</span></div><div class="shot-bottom"><figcaption class="shot-caption"><strong>Un support discret.</strong><span>Stable, compact et pensé pour mettre les jeux en valeur.</span></figcaption><span class="pill">Prêt à imprimer</span></div></figure>
   </div>
-
-  <div class="cta-row">
-    <a href="configurateur.html" class="cta-btn">
-      Construire mon support <span class="arrow">→</span>
-    </a>
-    <span class="cta-sub">Gratuit · aucun compte requis</span>
-  </div>
-
-  <div class="showcase">
-    <!-- Emplacement photo : remplacer le contenu de cette div par <img src="img1.png" alt="Support de jeux imprimé en 3D"> -->
-    <img src="img1.png" alt="Support de jeux imprimé en 3D">
-  </div>
-
-  <section>
-    <div class="section-head">
-      <div class="eyebrow"><span class="dot"></span>Comment ça marche</div>
-      <h2>Trois choix, un fichier prêt à imprimer.</h2>
-    </div>
-    <div class="steps">
-      <div class="step">
-        <div class="step-index">01</div>
-        <h3>Choisis ta console</h3>
-        <p>PlayStation, Nintendo, Xbox, Sega — chaque modèle a sa propre épaisseur de boîtier, déjà calibrée sur une mesure réelle.</p>
-        <span class="step-arrow">→</span>
-      </div>
-      <div class="step">
-        <div class="step-index">02</div>
-        <h3>Règle le nombre de jeux</h3>
-        <p>Le modèle se reconstruit en direct dans le navigateur : largeur et profondeur s'ajustent automatiquement.</p>
-        <span class="step-arrow">→</span>
-      </div>
-      <div class="step">
-        <div class="step-index">03</div>
-        <h3>Télécharge et tranche</h3>
-        <p>Fichier .STL généré localement, sans backend. Parois optimisées : <strong style="color:var(--white)">~1h15-1h30 d'impression*</strong> au lieu de 2h30 sur le même support.</p>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-head">
-      <div class="eyebrow"><span class="dot"></span>Plateformes prises en charge</div>
-      <h2>Toutes les consoles n'ont pas la même épaisseur de boîtier.</h2>
-    </div>
-    <div class="platform-grid">
-      <div class="platform-card">
-        <div class="platform-name">PlayStation</div>
-        <div class="platform-models">PS1 · PS2 · PS3<br>PS4 · PS5<br>PSP · PS Vita</div>
-      </div>
-      <div class="platform-card">
-        <div class="platform-name">Nintendo</div>
-        <div class="platform-models">Switch · Switch 2<br>Wii / Wii U · 3DS<br>DS · GameCube</div>
-      </div>
-      <div class="platform-card">
-        <div class="platform-name">Xbox</div>
-        <div class="platform-models">1ère gen · 360<br>One · Series</div>
-      </div>
-      <div class="platform-card">
-        <div class="platform-name">Sega</div>
-        <div class="platform-models">Saturn<br>Dreamcast</div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-head">
-      <div class="eyebrow"><span class="dot"></span>Sous le capot</div>
-      <h2>Chaque dimension part d'une mesure réelle, pas d'une estimation.</h2>
-    </div>
-    <div class="specimen">
-      <div class="specimen-visual">
-        <svg width="220" height="170" viewBox="0 0 240 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- socle -->
-          <rect x="40" y="140" width="160" height="14" rx="2" fill="#161616" stroke="#33312e" stroke-width="1"/>
-          <!-- parois du slot, de part et d'autre du boîtier -->
-          <rect x="95" y="128" width="3.5" height="26" fill="#2a2826"/>
-          <rect x="141.5" y="128" width="3.5" height="26" fill="#2a2826"/>
-          <!-- boîtier de jeu, debout dans le slot -->
-          <rect x="99" y="40" width="22" height="100" rx="1.5" fill="#1d1c1a" stroke="#f5f5f3" stroke-width="1.4"/>
-          <line x1="103" y1="48" x2="117" y2="48" stroke="#3a3835" stroke-width="1"/>
-          <line x1="103" y1="54" x2="117" y2="54" stroke="#3a3835" stroke-width="1"/>
-          <!-- cote d'épaisseur, au-dessus du boîtier -->
-          <g stroke="#7a7a78" stroke-width="1">
-            <line x1="99" y1="20" x2="121" y2="20"/>
-            <line x1="99" y1="16" x2="99" y2="24"/>
-            <line x1="121" y1="16" x2="121" y2="24"/>
-          </g>
-          <text x="110" y="11" fill="#f5f5f3" font-family="monospace" font-size="11" font-weight="600" text-anchor="middle">16.3 mm</text>
-          <text x="110" y="170" fill="#5e5e5c" font-family="monospace" font-size="9" text-anchor="middle">ÉPAISSEUR BOÎTIER · PS4</text>
-        </svg>
-      </div>
-      <div class="specimen-data">
-        <div class="specimen-label">PS4 · épaisseur boîtier</div>
-        <div class="row"><span>Mesure boîtier</span><span>16.3 mm</span></div>
-        <div class="row"><span>Jeu d'insertion</span><span>+1.4 mm</span></div>
-        <div class="row"><span>Épaisseur paroi</span><span>1.6 mm</span></div>
-        <div class="row"><span>Pas entre slots</span><span>19.3 mm</span></div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-head">
-      <div class="eyebrow"><span class="dot"></span>À propos de l'aperçu 3D</div>
-      <h2>Ce que tu vois dans le configurateur n'est pas un vrai moteur 3D.</h2>
-    </div>
-    <div class="specimen">
-      <div class="specimen-visual">
-        <svg width="220" height="165" viewBox="0 0 240 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- face arrière (suggère la profondeur, légèrement estompée) -->
-          <path d="M110 40 L190 40 L190 110 L110 110 Z" stroke="#5e5e5c" stroke-width="1" stroke-dasharray="3 3"/>
-          <!-- liaisons avant/arrière -->
-          <g stroke="#5e5e5c" stroke-width="1" stroke-dasharray="3 3">
-            <line x1="80" y1="70" x2="110" y2="40"/>
-            <line x1="160" y1="70" x2="190" y2="40"/>
-            <line x1="160" y1="140" x2="190" y2="110"/>
-            <line x1="80" y1="140" x2="110" y2="110"/>
-          </g>
-          <!-- face avant, pleine, c'est la face "active" du rendu -->
-          <path d="M80 70 L160 70 L160 140 L80 140 Z" fill="rgba(245,245,243,0.04)" stroke="#f5f5f3" stroke-width="1.5"/>
-          <!-- diagonale de tessellation interne, visible et assumée -->
-          <line x1="80" y1="70" x2="160" y2="140" stroke="#f5f5f3" stroke-width="1" opacity="0.45"/>
-          <!-- sommets marqués -->
-          <g fill="#f5f5f3">
-            <circle cx="80" cy="70" r="2.4"/>
-            <circle cx="160" cy="70" r="2.4"/>
-            <circle cx="160" cy="140" r="2.4"/>
-            <circle cx="80" cy="140" r="2.4"/>
-          </g>
-          <text x="120" y="163" fill="#5e5e5c" font-family="monospace" font-size="9" text-anchor="middle">PROJECTION FIL DE FER — SANS MOTEUR 3D</text>
-        </svg>
-      </div>
-      <div class="specimen-data">
-        <div class="specimen-label">Comment ça fonctionne</div>
-        <p style="color:var(--text-dim); font-size:12.5px; line-height:1.7; max-width:none;">
-          Pas de WebGL, pas de Three.js : chaque sommet du modèle est projeté
-          à la main sur un canvas 2D, image par image. C'est volontairement
-          minimaliste — zéro dépendance externe, zéro temps de chargement.
-        </p>
-      </div>
-    </div>
-    <p style="margin-top:20px; color:var(--text-dim); font-size:13px; line-height:1.6; max-width:640px;">
-      <strong style="color:var(--white);">À savoir :</strong> cette technique de « fausse 3D » peut produire des effets visuels inattendus pendant l'orbite — arêtes qui se croisent un bref instant, faces qui clignotent au passage d'un certain angle. C'est un artefact du rendu en fil de fer fait main, pas un défaut du modèle : le fichier .STL exporté reste toujours exact, quoi que montre l'aperçu.
-    </p>
-  </section>
-
-  <section>
-    <div class="section-head">
-      <div class="eyebrow"><span class="dot"></span>Questions fréquentes</div>
-      <h2>Avant d'imprimer</h2>
-    </div>
-    <div class="faq">
-      <details class="faq-item" open>
-        <summary>Quel matériau utiliser ?<span class="plus">+</span></summary>
-        <div class="faq-body">PLA ou PETG fonctionnent bien. Le PETG résiste mieux si le support reste exposé à la chaleur ou aux manipulations fréquentes ; le PLA suffit pour un usage décoratif.</div>
-      </details>
-      <details class="faq-item">
-        <summary>Faut-il des supports d'impression ?<span class="plus">+</span></summary>
-        <div class="faq-body">Non. Le modèle repose à plat sur sa plus grande face, toutes les parois sont verticales par rapport au plateau — aucune zone en porte-à-faux.</div>
-      </details>
-      <details class="faq-item">
-        <summary>Le fichier correspond-il vraiment à mon boîtier ?<span class="plus">+</span></summary>
-        <div class="faq-body">Chaque épaisseur est mesurée sur un boîtier réel de la console choisie, avec un jeu d'insertion ajouté pour que le jeu glisse sans forcer ni flotter.</div>
-      </details>
-      <details class="faq-item">
-        <summary>Puis-je modifier le fichier après export ?<span class="plus">+</span></summary>
-        <div class="faq-body">Oui, le .STL est un fichier standard : il s'ouvre dans n'importe quel logiciel de modélisation (Fusion 360, Blender) ou directement dans ton slicer pour un réglage fin.</div>
-      </details>
-      <details class="faq-item">
-        <summary>Sous quelle licence est distribué le fichier ?<span class="plus">+</span></summary>
-        <div class="faq-body">Les modèles générés par Slotted sont distribués sous licence <strong style="color:var(--white);">Creative Commons BY-NC</strong> (attribution, usage non commercial). Tu peux imprimer, modifier et partager librement pour un usage personnel, en créditant Slotted — la vente du fichier, de ses dérivés ou des pièces imprimées est interdite.</div>
-      </details>
-    </div>
-  </section>
-
-  <p class="footnote">* L'estimation de 1h15 à 1h30 est basée sur le modèle PS5 (6 emplacements) imprimé sur une Bambu Lab A1 avec des paramètres standards. Le temps d'impression peut varier selon la console, le nombre d'emplacements, l'imprimante et les réglages utilisés.</p>
+  <div class="metrics" aria-label="Chiffres clés"><div class="metric"><strong>≈ 55 min</strong><span>PS4 × 6 sur Bambu A1</span></div><div class="metric"><strong>2–16</strong><span>jeux par support</span></div><div class="metric"><strong>Sans support</strong><span>impression facile</span></div><div class="metric"><strong>Gratuit</strong><span>aucun compte requis</span></div></div>
+  <section id="fonctionnement"><div class="container"><div class="section-head reveal"><div class="section-label">01 / Fonctionnement</div><div><h2>Du choix de la console au plateau d’impression.</h2><p class="section-intro">Aucune modélisation à faire et aucune cote à modifier. Le configurateur calcule le support et génère le fichier directement.</p></div></div><div class="steps"><article class="step reveal"><div class="step-index">01 — FORMAT</div><h3>Choisis ta console</h3><p>Chaque modèle utilise l’épaisseur et la profondeur correspondant à son type de boîtier.</p></article><article class="step reveal"><div class="step-index">02 — CAPACITÉ</div><h3>Indique le nombre de jeux</h3><p>De 2 à 16 emplacements. La largeur du support et son aperçu s’adaptent instantanément.</p></article><article class="step reveal"><div class="step-index">03 — EXPORT</div><h3>Télécharge le STL</h3><p>Le modèle est généré localement, déjà posé à plat et conçu pour être imprimé sans support.</p></article></div></div></section>
+  <section><div class="container"><div class="section-head reveal"><div class="section-label">02 / Pourquoi Slotted</div><div><h2>Rapide, économique et stable.</h2><p class="section-intro">Tout est pensé pour obtenir un rangement propre sans transformer l’impression en projet compliqué.</p></div></div><div class="features"><article class="feature reveal"><div class="feature-icon">01</div><h3>Prêt en moins d’une heure</h3><p>Le modèle PS4 à six emplacements s’imprime en environ 55 minutes sur une Bambu Lab A1 avec un profil simple.</p></article><article class="feature reveal"><div class="feature-icon">02</div><h3>Peu de matière</h3><p>Une forme légère et aucune structure de support à jeter : tu utilises seulement le PLA nécessaire à la pièce.</p></article><article class="feature reveal"><div class="feature-icon">03</div><h3>Stable au quotidien</h3><p>Le socle plein garde les jeux bien posés, tandis que les séparateurs évitent qu’ils glissent ou se renversent.</p></article><article class="feature reveal"><div class="feature-icon">04</div><h3>Simple du début à la fin</h3><p>Pas de mesure, pas de logiciel de modélisation et pas de compte : quelques choix suffisent pour obtenir le fichier.</p></article></div></div></section>
+  <section id="compatibilite"><div class="container"><div class="section-head reveal"><div class="section-label">03 / Compatibilité</div><div><h2>Quatre familles, dix-neuf formats.</h2><p class="section-intro">Les dimensions changent automatiquement selon le type de boîtier sélectionné.</p></div></div><div class="platforms reveal"><article class="platform"><h3>PlayStation</h3><p>PS1 · PS2 · PS3<br>PS4 · PS5<br>PSP · PS Vita</p></article><article class="platform"><h3>Nintendo</h3><p>Switch · Switch 2<br>Wii / Wii U · 3DS<br>DS · GameCube</p></article><article class="platform"><h3>Xbox</h3><p>Première génération<br>Xbox 360 · One<br>Xbox Series</p></article><article class="platform"><h3>Sega</h3><p>Saturn<br>Dreamcast</p></article></div><div class="status reveal"><div class="status-mark">β</div><div><strong>Le configurateur évolue encore</strong><p>Les modèles sont vérifiés numériquement et les principaux formats sont testés progressivement. Les tolérances peuvent légèrement varier selon l’imprimante, le filament et les réglages utilisés.</p></div></div></div></section>
+  <section><div class="container"><div class="section-head reveal"><div class="section-label">04 / Exemple réel</div><div><h2>Six jeux PS4, prêts en 55 minutes.</h2><p class="section-intro">Un format compact qui se pose facilement sur une étagère et s’imprime en moins d’une heure avec des réglages accessibles.</p></div></div><div class="technical reveal"><div class="technical-visual"><svg viewBox="0 0 460 280" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schéma d’un support Slotted PS4 pour six jeux"><path d="M58 205L329 205L401 160L130 160L58 205Z" fill="#191916" stroke="#525248"/><path d="M58 205V211L329 211V205" fill="#24241f" stroke="#525248"/><path d="M329 205L401 160V166L329 211V205Z" fill="#20201c" stroke="#525248"/><g fill="#252520" stroke="#6c6c5f"><path d="M74 202V179L146 134V158L74 202Z"/><path d="M119 202V179L191 134V158L119 202Z"/><path d="M164 202V179L236 134V158L164 202Z"/><path d="M209 202V179L281 134V158L209 202Z"/><path d="M254 202V179L326 134V158L254 202Z"/><path d="M299 202V179L371 134V158L299 202Z"/><path d="M329 205V181L401 136V160L329 205Z"/></g><g stroke="#dfff72" stroke-width="1"><line x1="58" y1="239" x2="329" y2="239"/><line x1="58" y1="233" x2="58" y2="245"/><line x1="329" y1="233" x2="329" y2="245"/></g><text x="194" y="258" fill="#dfff72" font-family="monospace" font-size="11" text-anchor="middle">113,4 MM</text><text x="260" y="102" fill="#8d8d82" font-family="monospace" font-size="10" text-anchor="middle">PS4 · 6 JEUX</text></svg></div><div class="technical-data"><h3>Configuration de référence</h3><div class="data-row"><span>Support</span><strong>PS4 · 6 jeux</strong></div><div class="data-row"><span>Dimensions</span><strong>113,4 × 137,2 mm</strong></div><div class="data-row"><span>Temps d’impression</span><strong>54 min 14 s</strong></div><div class="data-row"><span>Imprimante</span><strong>Bambu Lab A1</strong></div><div class="data-row"><span>Matériau</span><strong>PLA Generic</strong></div><div class="data-row"><span>Remplissage</span><strong>15 %</strong></div><p class="data-note">Le temps peut varier selon l’imprimante, le profil et le filament. Cette configuration sert de repère simple, pas de promesse à la seconde près.</p></div></div></div></section>
+  <section><div class="container"><div class="section-head reveal"><div class="section-label">05 / Aperçu 3D</div><div><h2>Un moteur graphique conçu spécialement pour Slotted.</h2><p class="section-intro">L’aperçu n’est pas une image préfabriquée : il se reconstruit en direct à chaque choix pour montrer le support que tu vas réellement télécharger.</p></div></div><div class="engine reveal"><div class="engine-visual"><svg viewBox="0 0 360 280" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustration du moteur graphique de Slotted"><path d="M76 102L190 55L288 101L174 150L76 102Z" fill="#181815" stroke="#dfff72" stroke-width="1.5"/><path d="M76 102V186L174 235V150L76 102Z" fill="#131311" stroke="#77776b"/><path d="M174 150V235L288 184V101L174 150Z" fill="#1d1d19" stroke="#77776b"/><g stroke="#4f4f47" stroke-width="1"><line x1="112" y1="87" x2="210" y2="132"/><line x1="150" y1="71" x2="248" y2="117"/><line x1="108" y1="118" x2="108" y2="202"/><line x1="141" y1="134" x2="141" y2="218"/><line x1="212" y1="134" x2="212" y2="218"/><line x1="250" y1="118" x2="250" y2="201"/></g><g fill="#5f5f56"><rect x="72" y="98" width="8" height="8"/><rect x="186" y="51" width="8" height="8"/><rect x="284" y="97" width="8" height="8"/><rect x="170" y="146" width="8" height="8"/></g><text x="180" y="265" fill="#77776b" font-family="monospace" font-size="10" text-anchor="middle">APERÇU CALCULÉ EN TEMPS RÉEL</text></svg></div><div class="engine-copy"><h3>Léger, rapide, sans installation.</h3><p>Le moteur graphique maison transforme les dimensions du support en une vue 3D interactive directement dans la page. Tu peux tourner autour du modèle, vérifier sa forme et voir chaque modification instantanément, même sur un appareil modeste.</p><div class="engine-list"><span>Temps réel</span><span>Sans téléchargement</span><span>Fonctionne hors ligne</span></div></div></div></div></section>
+  <section id="faq"><div class="container"><div class="section-head reveal"><div class="section-label">06 / FAQ</div><div><h2>Avant de lancer l’impression.</h2></div></div><div class="faq reveal"><details open><summary>Quel matériau utiliser ?</summary><p>Le PLA convient très bien pour un support utilisé en intérieur. Le PETG est intéressant si la pièce risque d’être exposée à davantage de chaleur ou à des manipulations fréquentes.</p></details><details><summary>Faut-il activer des supports ?</summary><p>Non. Le modèle est prévu pour être posé directement à plat sur le plateau. Les parois sont verticales et ne créent aucun porte-à-faux nécessitant des supports.</p></details><details><summary>Pourquoi le support peut-il être légèrement serré ?</summary><p>Les imprimantes, filaments et réglages n’ont pas tous la même précision. Un débit trop élevé ou une première couche très écrasée peut réduire l’espace disponible autour du boîtier.</p></details><details><summary>Le fichier peut-il être vendu ?</summary><p>Non. Les modèles sont distribués sous licence Creative Commons BY-NC : usage personnel, modification et partage avec attribution sont autorisés, mais la vente du fichier ou des pièces imprimées est interdite.</p></details><details><summary>Pourquoi le projet est-il encore indiqué en bêta ?</summary><p>Les formats sont contrôlés numériquement et testés progressivement en conditions réelles. Le retour des utilisateurs permet encore d’améliorer les réglages et la compatibilité.</p></details></div></div></section>
 </main>
-
-<footer>
-  <div class="footer-row">
-    <span>SLOTTED — Enzo445 × NEXA</span>
-    <span>FAIT POUR ÊTRE IMPRIMÉ · LICENCE CC BY-NC</span>
-  </div>
-  <div class="footer-links">
-    <a href="https://github.com/Enzo445-tech/Slotted" class="footer-link" aria-label="Dépôt GitHub">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38C13.71 14.53 16 11.54 16 8c0-4.42-3.58-8-8-8z"/></svg>
-      <span>GitHub</span>
-    </a>
-    <a href="https://telegra.ph/Lien-Disponible-prochainement-06-30" class="footer-link" aria-label="Page MakerWorld">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1l6.5 3.75v6.5L8 15l-6.5-3.75v-6.5L8 1z"/><path d="M8 1v14M1.5 4.75L8 8.5l6.5-3.75M1.5 11.25L8 8.5l6.5 2.75"/></svg>
-      <span>MakerWorld</span>
-    </a>
-    <a href="https://discord.gg/hqb5MYpvVc" class="footer-link" aria-label="Serveur Discord">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M13.5 3.5C12.4 3 11.3 2.66 10.1 2.47c-.15.27-.31.62-.43.9-1.27-.19-2.53-.19-3.78 0-.12-.28-.29-.63-.44-.9-1.21.19-2.32.53-3.4 1.03C.27 6.5-.34 9.41.15 12.27c1.41 1.04 2.78 1.67 4.12 2.08.33-.46.63-.94.89-1.45-.49-.18-.96-.41-1.4-.67.12-.09.23-.18.34-.27 2.7 1.25 5.62 1.25 8.29 0 .11.1.22.19.34.27-.45.27-.91.49-1.4.67.26.51.56.99.89 1.45 1.34-.41 2.72-1.04 4.12-2.08.49-3.3-.31-6.18-1.84-8.77zM5.35 10.5c-.81 0-1.47-.74-1.47-1.65 0-.91.65-1.65 1.47-1.65.82 0 1.48.75 1.47 1.65 0 .91-.65 1.65-1.47 1.65zm5.3 0c-.81 0-1.47-.74-1.47-1.65 0-.91.65-1.65 1.47-1.65.82 0 1.48.75 1.47 1.65 0 .91-.65 1.65-1.47 1.65z"/></svg>
-      <span>Discord</span>
-    </a>
-  </div>
-</footer>
-
-<noscript>
-  <style>section{opacity:1 !important; transform:none !important;}</style>
-</noscript>
-
-<script>
-  // Animation d'apparition au défilement : chaque section passe en fondu/translation
-  // dès qu'elle entre dans le viewport. Filet de sécurité : si IntersectionObserver
-  // n'est pas disponible, ou si quoi que ce soit échoue, toutes les sections restent
-  // visibles immédiatement plutôt que de rester bloquées en opacity:0.
-  try{
-    if('IntersectionObserver' in window){
-      const sections = document.querySelectorAll('section');
-      const observer = new IntersectionObserver((entries)=>{
-        entries.forEach(entry=>{
-          if(entry.isIntersecting){
-            entry.target.classList.add('in-view');
-            observer.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-      sections.forEach(s => observer.observe(s));
-    } else {
-      document.querySelectorAll('section').forEach(s => s.classList.add('in-view'));
-    }
-  } catch(e){
-    console.error('Animation au scroll indisponible, affichage immédiat.', e);
-    document.querySelectorAll('section').forEach(s => s.classList.add('in-view'));
-  }
-</script>
-
+<footer><div class="container footer-inner"><span>SLOTTED — ENZO445 × NEXA · LICENCE CC BY-NC</span><div class="footer-links"><a class="social-button" href="https://github.com/Enzo445-tech/Slotted" aria-label="Voir Slotted sur GitHub"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .7a11.5 11.5 0 0 0-3.64 22.4c.58.1.79-.25.79-.56v-2.02c-3.23.7-3.91-1.37-3.91-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.38.97.1-.75.4-1.27.74-1.56-2.58-.3-5.29-1.29-5.29-5.7 0-1.27.45-2.3 1.2-3.11-.12-.3-.52-1.48.11-3.08 0 0 .98-.31 3.17 1.19a11 11 0 0 1 5.78 0c2.2-1.5 3.17-1.19 3.17-1.19.63 1.6.23 2.78.11 3.08.75.82 1.2 1.84 1.2 3.1 0 4.43-2.72 5.4-5.3 5.69.42.36.79 1.07.79 2.16v3.04c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .7Z"/></svg>GitHub</a><a class="social-button" href="https://makerworld.com/" aria-label="Découvrir Bambu Lab MakerWorld"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m12 2 8.7 5v10L12 22l-8.7-5V7L12 2Z"/><path d="m3.3 7 8.7 5 8.7-5M12 12v10"/></svg>Bambu</a><a class="social-button" href="https://discord.gg/hqb5MYpvVc" aria-label="Rejoindre le Discord Slotted"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.5 5.3A16 16 0 0 0 15.6 4l-.5 1a14 14 0 0 0-6.2 0l-.5-1a16 16 0 0 0-3.9 1.3C2 9 1.3 12.5 1.6 16a16 16 0 0 0 4.8 2.5l1.2-1.6-1.8-.9.4-.3a14 14 0 0 0 11.6 0l.4.3-1.8.9 1.2 1.6a16 16 0 0 0 4.8-2.5c.4-4.1-.7-7.6-2.9-10.7ZM8.4 14.2c-1 0-1.8-1-1.8-2.1S7.4 10 8.4 10s1.8 1 1.8 2.1-.8 2.1-1.8 2.1Zm7.2 0c-1 0-1.8-1-1.8-2.1s.8-2.1 1.8-2.1 1.8 1 1.8 2.1-.8 2.1-1.8 2.1Z"/></svg>Discord</a></div></div></footer>
+<noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
+<script>try{if('IntersectionObserver'in window&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target)}}),{threshold:.12,rootMargin:'0px 0px -30px'});document.querySelectorAll('.reveal').forEach(el=>observer.observe(el))}else{document.querySelectorAll('.reveal').forEach(el=>el.classList.add('visible'))}}catch(_){document.querySelectorAll('.reveal').forEach(el=>el.classList.add('visible'))}</script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-# Slotted
+# Slotted. 
 
 > Le support de jeux qui s'adapte à ta collection.
 

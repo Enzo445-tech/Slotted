@@ -22,7 +22,7 @@ La largeur, la profondeur et l'espacement sont calculés automatiquement à part
 
 ## Pourquoi Slotted ?
 
-- **Rapide à imprimer** : un support PS4 de 6 jeux a été imprimé en 54 min 14 s sur une Bambu Lab A1.
+- **Rapide à imprimer** : un support PS4 de 6 jeux s'imprime en environ 54 minutes sur une Bambu Lab A1.
 - **Économique** : la forme utilise peu de matière et ne nécessite aucun support d'impression.
 - **Stable** : le socle plein maintient les boîtiers correctement sur une étagère.
 - **Compact** : le support dépasse le moins possible tout en permettant de placer les jeux dans les deux sens.
@@ -47,9 +47,9 @@ Configuration utilisée comme référence pour mesurer le temps d'impression :
 | --- | --- |
 | Support | PS4 · 6 jeux |
 | Dimensions | 113,4 × 137,2 mm |
-| Temps d'impression | 54 min 14 s |
+| Temps d'impression | 53 min 04 s (≈ 54 min) |
 | Imprimante | Bambu Lab A1 |
-| Matériau | PLA Generic |
+| Matériau | PLA Basic Bambu Lab |
 | Remplissage | 15 % |
 | Supports | Aucun |
 

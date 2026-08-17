@@ -4,7 +4,7 @@
 
 Slotted est un configurateur gratuit qui crée un support de rangement adapté à ta console et au nombre de jeux que tu possèdes. Choisis un format, indique le nombre d'emplacements et télécharge un fichier STL prêt à imprimer.
 
-**Gratuit · Sans compte · Sans installation · Sans supports d'impression**
+**Gratuit · Sans compte · Sans installation · Sans supports d'impression** 
 
 [Créer mon support](https://enzo445-tech.github.io/Slotted/configurateur.html) · [Découvrir le site](https://enzo445-tech.github.io/Slotted/) · [Rejoindre le Discord](https://discord.gg/hqb5MYpvVc)
 

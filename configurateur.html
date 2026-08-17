@@ -585,7 +585,9 @@ const WALL_THICK = 1.2;       // épaisseur d'une paroi (latérale et de fond) �
 const CLEARANCE = 1.2;        // léger jeu latéral supplémentaire pour éviter de forcer
 const DEPTH_CLEARANCE = 1.0;  // jeu longitudinal minimal, le boîtier reste facile à insérer
 const BASE_THICK = 1.2;       // socle plein aminci, soit 6 couches à 0.20 mm
-const WALL_HEIGHT = 12;       // hauteur des parois — réduite, juste assez pour caler le boîtier
+const WALL_HEIGHT = 12;       // hauteur basse à l'avant : le support reste discret
+const REAR_WALL_HEIGHT = 28;  // appui arrière plus haut : les boîtiers restent mieux alignés
+const REAR_RISE_LENGTH = 32;  // montée progressive uniquement sur les derniers millimètres
 
 function getConsoleData(){
   return PLATFORMS[state.brand].consoles[state.console];
@@ -601,6 +603,8 @@ function computeDimensions(){
   return {
     slotPitch, width, depth,
     wallHeight: WALL_HEIGHT,
+    rearWallHeight: REAR_WALL_HEIGHT,
+    rearRiseLength: REAR_RISE_LENGTH,
     caseThickness: c.caseThickness,
     caseDepth: c.caseDepth,
   };
@@ -612,15 +616,16 @@ function computeDepthLayout(dims){
   const frontZ = -dims.depth / 2;
   const backZ = dims.depth / 2;
   const backWallFrontZ = backZ - WALL_THICK;
-  return { frontZ, backWallFrontZ, backZ };
+  const riseStartZ = Math.max(frontZ, backWallFrontZ - dims.rearRiseLength);
+  return { frontZ, riseStartZ, backWallFrontZ, backZ };
 }
 
 /* =========================================================
    GEOMETRIE PARTAGÉE
-   Un socle plat + une rangée de petites parois rectangulaires
-   basses, sur toute la profondeur — comme le support physique
-   de référence. Chaque jeu repose debout dans le creux entre
-   deux parois, sans mur sur toute la hauteur du boîtier.
+   Un socle plat + une rangée de séparateurs bas à l'avant,
+   qui montent progressivement sur la partie arrière. Le profil
+   garde une entrée discrète tout en guidant les boîtiers plus
+   haut pour limiter leur inclinaison.
    ========================================================= */
 function addBoxTriangles(list, cx, cy, cz, sx, sy, sz){
   const x0=cx-sx/2, x1=cx+sx/2;
@@ -664,12 +669,12 @@ function addBoxQuads(list, cx, cy, cz, sx, sy, sz){
    touchent sur le même plan — source des faces internes
    coplanaires visibles dans le slicer.
    ========================================================= */
-function buildCombProfile(dims){
+function buildCombProfile(dims, wallHeight = dims.wallHeight){
   const numWalls = state.count + 1;
   const startX = -dims.width/2 + WALL_THICK/2;
   const halfBase = dims.width/2;
   const topBase = BASE_THICK;
-  const topWall = BASE_THICK + dims.wallHeight;
+  const topWall = BASE_THICK + wallHeight;
 
   // On construit le contour en partant du coin bas-gauche, en suivant le bord
   // du socle puis en montant/descendant sur chaque dent, jusqu'au coin bas-droit,
@@ -757,23 +762,32 @@ function triangulatePolygon(polygon){
 
 function buildTriangleList(dims){
   const triangles = [];
-  const profile = buildCombProfile(dims);
-  const { frontZ:z0, backWallFrontZ:z1, backZ } = computeDepthLayout(dims);
-  const frontTris = triangulatePolygon(profile.map(p=>[p[0],p[1]]));
+  const lowProfile = buildCombProfile(dims, dims.wallHeight);
+  const highProfile = buildCombProfile(dims, dims.rearWallHeight);
+  const { frontZ:z0, riseStartZ:zRise, backWallFrontZ:z1, backZ } = computeDepthLayout(dims);
+  const frontTris = triangulatePolygon(lowProfile.map(p=>[p[0],p[1]]));
+  const rearTris = triangulatePolygon(highProfile.map(p=>[p[0],p[1]]));
 
   frontTris.forEach(([a,b,c])=>{
     triangles.push([[a[0],a[1],z0],[c[0],c[1],z0],[b[0],b[1],z0]]);
+  });
+  rearTris.forEach(([a,b,c])=>{
     triangles.push([[a[0],a[1],z1],[b[0],b[1],z1],[c[0],c[1],z1]]);
   });
 
-  for(let i=0; i<profile.length; i++){
-    const p0=profile[i], p1=profile[(i+1)%profile.length];
-    const a=[p0[0],p0[1],z0], b=[p1[0],p1[1],z0];
-    const c=[p1[0],p1[1],z1], d=[p0[0],p0[1],z1];
-    triangles.push([a,b,c],[a,c,d]);
+  function connectProfiles(profileA, zA, profileB, zB){
+    for(let i=0; i<profileA.length; i++){
+      const a0=profileA[i], a1=profileA[(i+1)%profileA.length];
+      const b0=profileB[i], b1=profileB[(i+1)%profileB.length];
+      const a=[a0[0],a0[1],zA], b=[a1[0],a1[1],zA];
+      const c=[b1[0],b1[1],zB], d=[b0[0],b0[1],zB];
+      triangles.push([a,b,c],[a,c,d]);
+    }
   }
+  connectProfiles(lowProfile, z0, lowProfile, zRise);
+  connectProfiles(lowProfile, zRise, highProfile, z1);
 
-  const totalHeight = BASE_THICK + dims.wallHeight;
+  const totalHeight = BASE_THICK + dims.rearWallHeight;
   addBoxTriangles(triangles, 0, totalHeight/2, (z1+backZ)/2,
     dims.width, totalHeight, WALL_THICK);
   return triangles;
@@ -781,19 +795,25 @@ function buildTriangleList(dims){
 
 function buildQuadList(dims){
   const quads = [];
-  const profile = buildCombProfile(dims);
-  const { frontZ:z0, backWallFrontZ:z1, backZ } = computeDepthLayout(dims);
+  const lowProfile = buildCombProfile(dims, dims.wallHeight);
+  const highProfile = buildCombProfile(dims, dims.rearWallHeight);
+  const { frontZ:z0, riseStartZ:zRise, backWallFrontZ:z1, backZ } = computeDepthLayout(dims);
 
-  quads.push(profile.map(p=>[p[0],p[1],z0]).reverse());
-  quads.push(profile.map(p=>[p[0],p[1],z1]));
+  quads.push(lowProfile.map(p=>[p[0],p[1],z0]).reverse());
+  quads.push(highProfile.map(p=>[p[0],p[1],z1]));
 
-  for(let i=0; i<profile.length; i++){
-    const p0=profile[i], p1=profile[(i+1)%profile.length];
-    quads.push([[p0[0],p0[1],z0],[p1[0],p1[1],z0],
-      [p1[0],p1[1],z1],[p0[0],p0[1],z1]]);
+  function connectProfiles(profileA, zA, profileB, zB){
+    for(let i=0; i<profileA.length; i++){
+      const a0=profileA[i], a1=profileA[(i+1)%profileA.length];
+      const b0=profileB[i], b1=profileB[(i+1)%profileB.length];
+      quads.push([[a0[0],a0[1],zA],[a1[0],a1[1],zA],
+        [b1[0],b1[1],zB],[b0[0],b0[1],zB]]);
+    }
   }
+  connectProfiles(lowProfile, z0, lowProfile, zRise);
+  connectProfiles(lowProfile, zRise, highProfile, z1);
 
-  const totalHeight = BASE_THICK + dims.wallHeight;
+  const totalHeight = BASE_THICK + dims.rearWallHeight;
   addBoxQuads(quads, 0, totalHeight/2, (z1+backZ)/2,
     dims.width, totalHeight, WALL_THICK);
   return quads;
@@ -977,7 +997,7 @@ function render(){
   ctx.clearRect(0,0,w,h);
   if(!currentDims || !w || !h) return;
 
-  const target = [0, currentDims.wallHeight * 0.6, 0];
+  const target = [0, (BASE_THICK + currentDims.rearWallHeight) * 0.45, 0];
   const camPos = [
     target[0] + orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta),
     target[1] + orbit.radius * Math.cos(orbit.phi),
@@ -1030,7 +1050,7 @@ function rebuild(){
     document.getElementById('specs').innerHTML = `
       <div class="row"><span>Largeur totale</span><span>${dims.width.toFixed(1)} mm</span></div>
       <div class="row"><span>Profondeur (auto, ${c.label})</span><span>${dims.depth.toFixed(1)} mm</span></div>
-      <div class="row"><span>Hauteur paroi</span><span>${dims.wallHeight} mm</span></div>
+      <div class="row"><span>Hauteur séparateurs</span><span>${dims.wallHeight} → ${dims.rearWallHeight} mm</span></div>
       <div class="row"><span>Épaisseur boîtier (${c.label})</span><span>${c.caseThickness} mm</span></div>
       <div class="row"><span>Jeu d'insertion</span><span>+${CLEARANCE} mm</span></div>
       <div class="row"><span>Emplacements</span><span>${state.count}</span></div>

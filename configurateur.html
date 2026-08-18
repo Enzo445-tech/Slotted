@@ -587,7 +587,7 @@ const DEPTH_CLEARANCE = 1.0;  // jeu longitudinal minimal, le boîtier reste fac
 const BASE_THICK = 1.2;       // socle plein aminci, soit 6 couches à 0.20 mm
 const WALL_HEIGHT = 12;       // hauteur basse à l'avant : le support reste discret
 const REAR_WALL_HEIGHT = 28;  // appui arrière plus haut : les boîtiers restent mieux alignés
-const REAR_RISE_LENGTH = 32;  // montée progressive uniquement sur les derniers millimètres
+const REAR_RISE_LENGTH = 55;  // pente plus longue pour adoucir la jonction entre la partie basse et l'appui arrière
 
 function getConsoleData(){
   return PLATFORMS[state.brand].consoles[state.console];
